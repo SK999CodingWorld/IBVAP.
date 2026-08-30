@@ -1,0 +1,52 @@
+# Exclude Node.js and Frontend dependencies
+node_modules/
+*/node_modules/
+frontend/node_modules/
+dashboard/node_modules/
+.npm/
+
+# Exclude Python Environments & Cache
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+ibvap-env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Exclude Large Videos & Recordings
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+recordings/
+evidence_snapshots/
+
+# Exclude Model Weights (Weights auto-downloaded on launch)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.bin
+*.weights
+
+# Exclude Databases & Local Logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Exclude Build Artefacts & IDE settings
+dist/
+dashboard/dist/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
