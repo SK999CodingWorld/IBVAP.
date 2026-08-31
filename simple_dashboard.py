@@ -1,25 +1,47 @@
+import json
+import os
+import time
+import threading
+from datetime import datetime, timezone
+from pathlib import Path
+
 from fastapi import FastAPI, Response
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from ultralytics import YOLO
 import cv2
-import threading
-import time
 import uvicorn
-import os
 
 app = FastAPI(title="IBVAP Live Dashboard")
+
+# CORS — explicit trusted origins (matches main.py and settings.py)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 # Mount static files for React build
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 static_assets = os.path.join(static_dir, "assets")
 if os.path.exists(static_assets):
     app.mount("/assets", StaticFiles(directory=static_assets), name="assets")
-# Placeholder - will mount "/" after API routes
 
 # Load model
 model = YOLO("yolov8n.pt")
+_start_time = time.time()
 
 video_path = "test.mp4"
 
@@ -27,18 +49,25 @@ FENCE_X1, FENCE_Y1 = 400, 200
 FENCE_X2, FENCE_Y2 = 900, 600
 
 latest_frame = None
-alerts = []
+alerts: list = []
 lock = threading.Lock()
+_frame_count = 0
+_video_active = False
+
 
 def process_video():
-    global latest_frame, alerts
+    global latest_frame, _frame_count, _video_active
     cap = cv2.VideoCapture(video_path)
-    
+    _video_active = cap.isOpened()
+
     while True:
         success, frame = cap.read()
         if not success:
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
+
+        _video_active = True
+        _frame_count += 1
 
         results = model(frame, verbose=False)
 
@@ -66,13 +95,17 @@ def process_video():
             cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
             if inside:
+                now = datetime.now(timezone.utc)
                 with lock:
                     alerts.insert(0, {
-                        "time": time.strftime("%H:%M:%S"),
+                        "time": now.strftime("%H:%M:%S"),
+                        "timestamp": now.isoformat(),
                         "type": f"{label} intrusion",
-                        "confidence": f"{conf:.0%}"
+                        "class_name": label,
+                        "confidence": round(conf, 3),
+                        "camera_id": "cam1",
                     })
-                    alerts[:] = alerts[:20]
+                    alerts[:] = alerts[:50]
 
         _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
         with lock:
@@ -80,7 +113,9 @@ def process_video():
 
         time.sleep(0.03)
 
+
 threading.Thread(target=process_video, daemon=True).start()
+
 
 def generate_stream():
     while True:
@@ -91,34 +126,181 @@ def generate_stream():
                    b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
         time.sleep(0.03)
 
+
 @app.get("/video_feed")
 def video_feed():
     return StreamingResponse(generate_stream(), media_type="multipart/x-mixed-replace; boundary=frame")
 
+
 @app.get("/alerts")
 def get_alerts():
     with lock:
-        return alerts
+        return list(alerts)
 
-# Mock API for React dashboard
+
+# ──────────────────────────────────────────────────────────
+# REAL API endpoints — no mock/hardcoded data
+# ──────────────────────────────────────────────────────────
+
 @app.get("/api/health")
 def api_health():
-    return {"service":"ibvap","version":"1.0.0","status":"healthy","uptime_seconds": 3600, "components":[{"name":"redis","status":"healthy","message":"Connected"},{"name":"detection","status":"healthy","message":"24 FPS"},{"name":"tracking","status":"healthy","message":"8 cameras"}],"timestamp":"2024-01-15T12:00:00Z"}
+    """Returns actual health status of every running component."""
+    uptime = int(time.time() - _start_time)
+    components = []
+
+    # Detection engine
+    model_loaded = model is not None
+    class_count = len(model.names) if model_loaded else 0
+    components.append({
+        "name": "detection_worker",
+        "status": "healthy" if model_loaded else "unhealthy",
+        "message": f"YOLOv8 loaded — {class_count} classes" if model_loaded else "Model not loaded",
+    })
+
+    # Video capture
+    components.append({
+        "name": "stream_ingest",
+        "status": "healthy" if _video_active else "degraded",
+        "message": f"Streaming — {_frame_count} frames processed" if _video_active else "No video source",
+    })
+
+    # Alert engine
+    with lock:
+        alert_count = len(alerts)
+    components.append({
+        "name": "alert_engine",
+        "status": "healthy",
+        "message": f"{alert_count} alerts in history",
+    })
+
+    overall = "healthy"
+    if any(c["status"] == "unhealthy" for c in components):
+        overall = "unhealthy"
+    elif any(c["status"] == "degraded" for c in components):
+        overall = "degraded"
+
+    return {
+        "service": "ibvap",
+        "version": "1.0.0",
+        "status": overall,
+        "uptime_seconds": uptime,
+        "components": components,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
 
 @app.get("/api/cameras")
 def api_cameras():
-    return [{"id":"cam1","name":"BOP-North-Gate","location":"Border North","protocol":"rtsp","stream_url":"rtsp://demo","status":"online","fps":24.5,"enabled":True,"ptz_enabled":True,"latitude":34.12,"longitude":74.56,"ptz_presets":[],"zones":[],"metadata":{},"created_at":"2024-01-15T10:00:00Z","updated_at":"2024-01-15T10:00:00Z","resolution":"1280x720","bitrate":4000},{"id":"cam2","name":"BOP-South-Gate","location":"Border South","protocol":"rtsp","stream_url":"rtsp://demo2","status":"offline","fps":0,"enabled":True,"ptz_enabled":False,"ptz_presets":[],"zones":[],"metadata":{},"created_at":"2024-01-15T10:00:00Z","updated_at":"2024-01-15T10:00:00Z","resolution":"1280x720","bitrate":0}]
+    """Returns real camera list from cameras.json, or the single active local feed."""
+    cameras_path = Path(__file__).parent / "cameras.json"
+    if cameras_path.exists():
+        try:
+            data = json.loads(cameras_path.read_text(encoding="utf-8"))
+            cameras = data if isinstance(data, list) else list(data.values())
+            return cameras
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    now = datetime.now(timezone.utc).isoformat()
+    return [{
+        "id": "cam1",
+        "name": "IBVAP-Local-Feed",
+        "location": "Local Video Source",
+        "protocol": "file",
+        "stream_url": video_path,
+        "status": "online" if _video_active else "offline",
+        "fps": round(1 / 0.033, 1) if _video_active else 0,
+        "enabled": True,
+        "ptz_enabled": False,
+        "ptz_presets": [],
+        "zones": [],
+        "metadata": {"source": "simple_dashboard.py"},
+        "created_at": now,
+        "updated_at": now,
+    }]
+
 
 @app.get("/api/alerts")
 def api_alerts():
+    """Returns real alert history from the intrusion detection loop."""
     with lock:
-        return [{"id": f"alert_{i}", "camera_id":"cam1","type":"intrusion","severity":"critical" if i<2 else "warning","message": a["type"],"class_name": a["type"].split()[0], "confidence": 0.85, "timestamp": "2024-01-15T12:00:00Z", "acknowledged": False, "metadata":{}} for i,a in enumerate(alerts[:10])]
+        return [
+            {
+                "id": f"alert_{i}_{hash(a.get('timestamp', '')) % 100000}",
+                "camera_id": a.get("camera_id", "cam1"),
+                "type": "zone_intrusion",
+                "severity": "critical" if a.get("class_name") == "person" else "warning",
+                "message": a.get("type", "Unknown alert"),
+                "class_name": a.get("class_name", "unknown"),
+                "confidence": a.get("confidence", 0.0),
+                "timestamp": a.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                "acknowledged": False,
+                "metadata": {},
+            }
+            for i, a in enumerate(alerts)
+        ]
+
 
 @app.get("/api/recordings/storage")
 def api_storage():
-    return {"total_size_bytes": 256000000, "total_size_mb": 245, "clip_count": 47, "cameras":["cam1","cam2"]}
+    """Scans the actual recordings directory for real storage stats."""
+    recordings_dir = Path(__file__).parent / "recordings"
+    total_size = 0
+    clip_count = 0
+    camera_ids: set = set()
 
+    if recordings_dir.exists():
+        for f in recordings_dir.rglob("*"):
+            if f.is_file() and f.suffix in (".mp4", ".avi", ".mkv", ".ts", ".json"):
+                if f.suffix != ".json":
+                    clip_count += 1
+                total_size += f.stat().st_size
+                parts = f.relative_to(recordings_dir).parts
+                if parts:
+                    camera_ids.add(parts[0])
+
+    return {
+        "total_size_bytes": total_size,
+        "total_size_mb": round(total_size / (1024 * 1024), 1),
+        "clip_count": clip_count,
+        "cameras": sorted(camera_ids) if camera_ids else ["cam1"],
+    }
+
+
+# ──────────────────────────────────────────────────────────
+# Aggregate status endpoint
+# ──────────────────────────────────────────────────────────
+
+@app.get("/api/status")
+def api_status():
+    """One-call aggregate: health + key stats of every component."""
+    health = api_health()
+    cameras = api_cameras()
+    storage = api_storage()
+
+    with lock:
+        recent_alerts = len(alerts)
+        critical_count = sum(1 for a in alerts if a.get("class_name") == "person")
+
+    return {
+        "health": health,
+        "cameras": {
+            "total": len(cameras),
+            "online": sum(1 for c in cameras if c.get("status") == "online"),
+        },
+        "alerts": {
+            "total": recent_alerts,
+            "critical": critical_count,
+        },
+        "storage": storage,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ──────────────────────────────────────────────────────────
 # Serve React app at root
+# ──────────────────────────────────────────────────────────
+
 @app.get("/")
 async def root():
     index_path = os.path.join(static_dir, "index.html")
@@ -130,10 +312,11 @@ async def root():
     <body style="background:#111;color:#eee;font-family:sans-serif;padding:20px;">
         <h1>IBVAP Live Dashboard</h1>
         <p>React build not found. Run <code>cd dashboard && npm run build</code> first.</p>
-        <p><a href="/simple">Simple Dashboard</a> | <a href="/video_feed">Video Feed</a> | <a href="/alerts">Alerts API</a></p>
+        <p><a href="/simple">Simple Dashboard</a> | <a href="/video_feed">Video Feed</a> | <a href="/docs">API Docs</a></p>
     </body>
     </html>
     """)
+
 
 # Simple dashboard at /simple
 @app.get("/simple", response_class=HTMLResponse)
@@ -166,9 +349,9 @@ def simple_dashboard():
             <h1>IBVAP — Live Dashboard</h1>
             <span style="color:#22c55e; font-weight:bold;">● LIVE</span>
         </div>
-        
+
         <div class="zone-info">
-            <strong>Virtual Fence Zone:</strong> Rectangle (400,200) to (900,600) | 
+            <strong>Virtual Fence Zone:</strong> Rectangle (400,200) to (900,600) |
             Classes: person, car, truck, bus, motorcycle
         </div>
 
@@ -192,7 +375,7 @@ def simple_dashboard():
 
         <script>
             let totalIntrusions = 0;
-            
+
             async function refreshAlerts() {
                 try {
                     const res = await fetch('/alerts');
@@ -201,20 +384,21 @@ def simple_dashboard():
                     if (data.length === 0) {
                         list.innerHTML = '<p style="color:#666; text-align:center; margin-top:50px;">No alerts yet</p>';
                     } else {
-                        list.innerHTML = data.map(a => 
-                            `<div class="alert-item ${a.type.includes('person') ? 'warning' : ''}">
+                        list.innerHTML = data.map(a =>
+                            `<div class="alert-item ${a.class_name === 'person' ? 'warning' : ''}">
                                 <b>${a.type}</b><br>
-                                <small>${a.time} • ${a.confidence}</small>
+                                <small>${a.time} • ${(a.confidence * 100).toFixed(0)}%</small>
                             </div>`
                         ).join('');
                     }
                     document.getElementById('alertCount').textContent = data.length;
+                    totalIntrusions += data.length;
                     document.getElementById('intrusionCount').textContent = totalIntrusions;
                 } catch (e) {
                     console.error(e);
                 }
             }
-            
+
             setInterval(refreshAlerts, 1000);
             refreshAlerts();
         </script>
@@ -222,17 +406,18 @@ def simple_dashboard():
     </html>
     """
 
+
 # Catch-all for React Router (must be last - before __main__)
 @app.get("/{full_path:path}")
 async def serve_react(full_path: str):
-    if full_path.startswith("api/") or full_path.startswith("video_feed") or full_path.startswith("alerts") or full_path.startswith("simple") or full_path.startswith("assets"):
+    if full_path.startswith(("api/", "video_feed", "alerts", "simple", "assets", "docs", "openapi.json", "redoc")):
         return HTMLResponse("Not found", status_code=404)
     index_path = os.path.join(static_dir, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return HTMLResponse("Not found", status_code=404)
 
+
 if __name__ == "__main__":
-    import os as _os
-    _port = int(_os.environ.get("PORT", "8000"))
+    _port = int(os.environ.get("PORT", "8000"))
     uvicorn.run(app, host="0.0.0.0", port=_port)

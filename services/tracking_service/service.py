@@ -10,7 +10,7 @@ import numpy as np
 
 from shared.config.settings import settings
 from shared.messaging.streams import StreamManager
-from shared.schemas.detection import DetectionBatch
+from shared.schemas.detection import Detection, DetectionBatch
 from shared.schemas.tracking import Track, TrackBatch, TrackState, BoundingBox
 from shared.schemas.zone import Zone, ZoneConfig, ZoneType
 from shared.utils.zones import load_zones_from_file

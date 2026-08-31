@@ -51,7 +51,7 @@ install_dependencies() {
         apt-get install -y \
             python3 python3-pip python3-venv \
             redis-server postgresql postgresql-contrib \
-            ffmpeg libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1-mesa-glx \
+            ffmpeg libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1 \
             nginx supervisor \
             git curl wget \
             build-essential cmake pkg-config \

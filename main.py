@@ -257,17 +257,27 @@ async def health_check():
 
 @app.post("/cameras", response_model=dict)
 async def create_camera(camera: CameraCreate):
-    cam = app_instance.stream_ingest.add_camera(camera)
-    return {"id": cam.id, "message": "Camera created"}
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
+    try:
+        cam = app_instance.stream_ingest.add_camera(camera)
+        return {"id": cam.id, "message": "Camera created"}
+    except Exception as e:
+        logger.error(f"Failed to create camera: {e}")
+        raise HTTPException(500, f"Failed to create camera: {str(e)}")
 
 
 @app.get("/cameras")
 async def list_cameras():
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
     return app_instance.stream_ingest.list_cameras()
 
 
 @app.get("/cameras/{camera_id}")
 async def get_camera(camera_id: str):
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
     cam = app_instance.stream_ingest.get_camera(camera_id)
     if not cam:
         raise HTTPException(404, "Camera not found")
@@ -276,7 +286,13 @@ async def get_camera(camera_id: str):
 
 @app.patch("/cameras/{camera_id}")
 async def update_camera(camera_id: str, updates: CameraUpdate):
-    success = await app_instance.stream_ingest.update_camera(camera_id, updates.model_dump(exclude_unset=True))
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
+    try:
+        success = await app_instance.stream_ingest.update_camera(camera_id, updates.model_dump(exclude_unset=True))
+    except Exception as e:
+        logger.error(f"Error updating camera {camera_id}: {e}")
+        raise HTTPException(500, f"Failed to update camera: {str(e)}")
     if not success:
         raise HTTPException(404, "Camera not found")
     return {"message": "Camera updated"}
@@ -284,7 +300,13 @@ async def update_camera(camera_id: str, updates: CameraUpdate):
 
 @app.delete("/cameras/{camera_id}")
 async def delete_camera(camera_id: str):
-    success = await app_instance.stream_ingest.remove_camera(camera_id)
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
+    try:
+        success = await app_instance.stream_ingest.remove_camera(camera_id)
+    except Exception as e:
+        logger.error(f"Error deleting camera {camera_id}: {e}")
+        raise HTTPException(500, f"Failed to delete camera: {str(e)}")
     if not success:
         raise HTTPException(404, "Camera not found")
     return {"message": "Camera deleted"}
@@ -292,6 +314,8 @@ async def delete_camera(camera_id: str):
 
 @app.get("/cameras/{camera_id}/health")
 async def camera_health(camera_id: str):
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
     health = app_instance.stream_ingest.get_health(camera_id)
     if not health:
         raise HTTPException(404, "Camera not found")
@@ -300,28 +324,46 @@ async def camera_health(camera_id: str):
 
 @app.post("/alerts/rules")
 async def create_alert_rule(rule: AlertRule):
-    app_instance.alert_engine.add_rule(rule)
-    return {"id": rule.id, "message": "Alert rule created"}
+    if not app_instance.alert_engine:
+        raise HTTPException(503, "Alert engine service not running")
+    try:
+        app_instance.alert_engine.add_rule(rule)
+        return {"id": rule.id, "message": "Alert rule created"}
+    except Exception as e:
+        logger.error(f"Error creating alert rule: {e}")
+        raise HTTPException(500, f"Failed to create alert rule: {str(e)}")
 
 
 @app.get("/alerts/rules")
 async def list_alert_rules():
+    if not app_instance.alert_engine:
+        raise HTTPException(503, "Alert engine service not running")
     return app_instance.alert_engine.get_rules()
 
 
 @app.delete("/alerts/rules/{rule_id}")
 async def delete_alert_rule(rule_id: str):
-    app_instance.alert_engine.remove_rule(rule_id)
-    return {"message": "Alert rule deleted"}
+    if not app_instance.alert_engine:
+        raise HTTPException(503, "Alert engine service not running")
+    try:
+        app_instance.alert_engine.remove_rule(rule_id)
+        return {"message": "Alert rule deleted"}
+    except Exception as e:
+        logger.error(f"Error deleting alert rule {rule_id}: {e}")
+        raise HTTPException(500, f"Failed to delete alert rule: {str(e)}")
 
 
 @app.get("/alerts")
 async def get_alerts(limit: int = 100, camera_id: str = None):
+    if not app_instance.alert_engine:
+        raise HTTPException(503, "Alert engine service not running")
     return app_instance.alert_engine.get_alerts(limit=limit, camera_id=camera_id)
 
 
 @app.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(alert_id: str, user: str = "operator"):
+    if not app_instance.alert_engine:
+        raise HTTPException(503, "Alert engine service not running")
     alerts = app_instance.alert_engine.get_alerts()
     for alert in alerts:
         if alert.id == alert_id:
@@ -336,7 +378,11 @@ async def acknowledge_alert(alert_id: str, user: str = "operator"):
 async def add_face_watchlist(name: str, image_path: str):
     if not app_instance.face_worker:
         raise HTTPException(503, "Face worker not running")
-    success = app_instance.face_worker.add_to_watchlist(name, image_path)
+    try:
+        success = app_instance.face_worker.add_to_watchlist(name, image_path)
+    except Exception as e:
+        logger.error(f"Error adding to face watchlist: {e}")
+        raise HTTPException(500, f"Failed to add face: {str(e)}")
     if not success:
         raise HTTPException(400, "Failed to add face to watchlist")
     return {"message": f"Added {name} to watchlist"}
@@ -346,7 +392,11 @@ async def add_face_watchlist(name: str, image_path: str):
 async def remove_face_watchlist(name: str):
     if not app_instance.face_worker:
         raise HTTPException(503, "Face worker not running")
-    success = app_instance.face_worker.remove_from_watchlist(name)
+    try:
+        success = app_instance.face_worker.remove_from_watchlist(name)
+    except Exception as e:
+        logger.error(f"Error removing face from watchlist: {e}")
+        raise HTTPException(500, f"Failed to remove face: {str(e)}")
     if not success:
         raise HTTPException(404, "Face not in watchlist")
     return {"message": f"Removed {name} from watchlist"}
@@ -424,10 +474,16 @@ async def export_evidence(camera_id: str, start_time: str, end_time: str):
 async def initialize_ptz(camera_id: str):
     if not app_instance.ptz_service:
         raise HTTPException(503, "PTZ service not running")
+    if not app_instance.stream_ingest:
+        raise HTTPException(503, "Stream ingest service not running")
     cam = app_instance.stream_ingest.get_camera(camera_id)
     if not cam:
         raise HTTPException(404, "Camera not found")
-    success = await app_instance.ptz_service.initialize_camera(cam)
+    try:
+        success = await app_instance.ptz_service.initialize_camera(cam)
+    except Exception as e:
+        logger.error(f"Error initializing PTZ for {camera_id}: {e}")
+        raise HTTPException(500, f"PTZ initialization error: {str(e)}")
     if not success:
         raise HTTPException(400, "Failed to initialize PTZ (ONVIF not available or auth failed)")
     return {"message": f"PTZ initialized for {camera_id}"}
@@ -523,6 +579,33 @@ async def ptz_status(camera_id: str):
     if not status:
         raise HTTPException(404, "PTZ not initialized for this camera")
     return status.model_dump()
+
+
+# Aggregate Status Endpoint
+@app.get("/api/status")
+async def api_status():
+    health = app_instance.health
+    cameras = app_instance.stream_ingest.list_cameras() if app_instance.stream_ingest else []
+    alerts = app_instance.alert_engine.get_alerts(limit=100) if app_instance.alert_engine else []
+    storage = app_instance.recording_service.get_storage_info() if app_instance.recording_service else {}
+    tracks_count = sum(len(t.tracks) for t in app_instance.tracking_service.trackers.values()) if (app_instance.tracking_service and app_instance.tracking_service.trackers) else 0
+
+    return {
+        "health": health.model_dump() if hasattr(health, "model_dump") else health,
+        "cameras": {
+            "total": len(cameras),
+            "online": sum(1 for c in cameras if getattr(getattr(c, "status", None), "value", str(getattr(c, "status", ""))) == "online"),
+        },
+        "tracking": {
+            "active_tracks": tracks_count,
+        },
+        "alerts": {
+            "total": len(alerts),
+            "unacknowledged": sum(1 for a in alerts if not getattr(a, "acknowledged", False)),
+        },
+        "storage": storage,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
 
 
 if __name__ == "__main__":

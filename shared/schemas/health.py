@@ -18,7 +18,7 @@ class ComponentHealth(BaseModel):
     message: Optional[str] = None
     latency_ms: Optional[float] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    last_check: datetime
+    last_check: datetime = Field(default_factory=datetime.utcnow)
 
 
 class HealthCheck(BaseModel):
