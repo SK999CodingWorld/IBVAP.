@@ -169,14 +169,6 @@ export const CommandCenter: React.FC = () => {
           >
             <Upload size={14} /> Change Source Feed
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => navigate('/presentation')}
-            className="text-xs text-amber-400 border-amber-500/40 hover:bg-amber-500/10 font-semibold"
-          >
-            SIH Presentation Mode
-          </Button>
         </div>
       </div>
 

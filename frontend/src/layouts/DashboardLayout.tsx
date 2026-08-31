@@ -27,10 +27,8 @@ const navItems = [
   { path: '/camera-health', icon: HeartPulse, label: 'Camera Health' },
   { path: '/system-health', icon: Activity, label: 'System Health' },
   { path: '/security', icon: Shield, label: 'Security Center' },
-  { path: '/audit-log', icon: FileText, label: 'Audit Log' },
   { path: '/users', icon: Users, label: 'Users & Roles' },
   { path: '/demo', icon: Play, label: 'Demo Center' },
-  { path: '/presentation', icon: Sparkles, label: 'SIH Presentation Mode' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 

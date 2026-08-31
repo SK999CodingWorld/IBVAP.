@@ -24,7 +24,6 @@ import { SettingsPage } from './pages/SettingsPage';
 import { AIModelCenter } from './pages/AIModelCenter';
 import { VideoAnalyzer } from './pages/VideoAnalyzer';
 import { SurveillanceHeatmap } from './pages/SurveillanceHeatmap';
-import { PresentationMode } from './components/presentation/PresentationMode';
 import { useAuthStore } from './stores/authStore';
 import { useEffect } from 'react';
 
@@ -70,7 +69,6 @@ function App() {
           <Route path="/users" element={<UsersRoles />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/demo" element={<DemoCenter />} />
-          <Route path="/presentation" element={<PresentationMode />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
