@@ -117,40 +117,6 @@ export const SettingsPage = () => {
                   </select>
                 </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-800">
-                <h3 className="text-sm font-medium text-slate-200 mb-4">Simulation & Demo Mode</h3>
-                
-                <div className="flex items-center justify-between p-4 bg-slate-950 rounded-lg border border-slate-800 mb-4">
-                  <div>
-                    <h4 className="font-medium text-white flex items-center gap-2">
-                      <MonitorPlay className="w-4 h-4 text-blue-400" /> Enable Demo Mode
-                    </h4>
-                    <p className="text-sm text-slate-400">Uses mock services and simulated data for demonstration purposes</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked onChange={handleToggle} />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-
-                <div className="space-y-2 max-w-md">
-                  <label className="text-sm font-medium text-slate-300 flex justify-between">
-                    <span>Simulation Speed</span>
-                    <span className="text-blue-400">1x</span>
-                  </label>
-                  <input 
-                    type="range" 
-                    min="1" max="10" defaultValue="1" 
-                    onChange={handleChange}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>Real-time</span>
-                    <span>10x Fast-forward</span>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}
