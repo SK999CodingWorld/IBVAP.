@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { SimulationBanner } from '../components/ui/SimulationBanner';
 import { 
   Server, Cpu, Database, Network, HardDrive, 
   Activity, ArrowDownToLine, Signal, SignalZero, WifiOff, RefreshCw
@@ -65,7 +64,6 @@ export const SystemHealth = () => {
 
   return (
     <div className="p-6 space-y-6 h-full overflow-y-auto bg-slate-950 text-slate-200">
-      <SimulationBanner />
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

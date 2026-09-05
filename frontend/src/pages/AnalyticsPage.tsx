@@ -6,7 +6,6 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
-import { SimulationBanner } from '../components/ui/SimulationBanner';
 import { 
   Activity, Users, Car, AlertTriangle, Clock, 
   Target, Shield, Camera, Cpu, Eye, Video
@@ -85,7 +84,6 @@ export const AnalyticsPage = () => {
 
   return (
     <div className="p-6 space-y-6 h-full overflow-y-auto bg-slate-950 text-slate-200">
-      <SimulationBanner />
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

@@ -1,11 +1,10 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
-import { SimulationBanner } from '@/components/ui/SimulationBanner';
 import { 
   LayoutDashboard, Monitor, Camera, Bell, AlertTriangle, 
   Footprints, CarFront, Fence, Map, Archive, HeartPulse, 
-  BarChart3, Activity, Shield, FileText, Users, Settings, Play,
+  BarChart3, Activity, Shield, FileText, Users, Settings,
   Cpu, Video, Flame, Sparkles
 } from 'lucide-react';
 
@@ -28,7 +27,6 @@ const navItems = [
   { path: '/system-health', icon: Activity, label: 'System Health' },
   { path: '/security', icon: Shield, label: 'Security Center' },
   { path: '/users', icon: Users, label: 'Users & Roles' },
-  { path: '/demo', icon: Play, label: 'Demo Center' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -96,7 +94,6 @@ export const DashboardLayout = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <SimulationBanner />
         <main className="flex-1 overflow-hidden relative">
           <Outlet />
         </main>

@@ -5,7 +5,6 @@ import { CommandCenter } from './pages/CommandCenter';
 import { LiveSurveillance } from './pages/LiveSurveillance';
 import { CameraManagement } from './pages/CameraManagement';
 import { CameraHealth } from './pages/CameraHealth';
-import { DemoCenter } from './pages/DemoCenter';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { IncidentsPage } from './pages/IncidentsPage';
@@ -68,7 +67,6 @@ function App() {
           <Route path="/audit-log" element={<AuditLog />} />
           <Route path="/users" element={<UsersRoles />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/demo" element={<DemoCenter />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
