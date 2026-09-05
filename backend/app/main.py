@@ -44,14 +44,13 @@ app.include_router(users.router)
 app.include_router(dashboard.router)
 
 from app.api import (
-    cameras, simulation, detections, tracking, anpr, zones, faces, map, evidence, 
+    cameras, detections, tracking, anpr, zones, faces, map, evidence, 
     audit, security, alerts, incidents, edge, analytics, system, notifications, search,
     video_intelligence, ai_models
 )
 from app.api import settings as settings_api
 
 app.include_router(cameras.router)
-app.include_router(simulation.router)
 app.include_router(detections.router)
 app.include_router(tracking.router)
 app.include_router(anpr.router)

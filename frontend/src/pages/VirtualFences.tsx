@@ -38,8 +38,8 @@ export const VirtualFences = () => {
           <p className="text-slate-400">Intrusion detection zones and tripwires</p>
         </div>
         <div className="flex items-center space-x-4">
-          <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-            SIMULATION MODE
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono">
+            LIVE ACTIVE
           </Badge>
           <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => alert('Add zone modal')}>
             <Plus className="w-4 h-4 mr-2" />

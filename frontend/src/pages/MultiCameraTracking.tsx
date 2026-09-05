@@ -42,8 +42,8 @@ export const MultiCameraTracking = () => {
           <h1 className="text-3xl font-bold tracking-tight text-white">Cross-Camera Tracking</h1>
           <p className="text-slate-400">Multi-camera appearance correlation and trajectory</p>
         </div>
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-          SIMULATION MODE
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono">
+          LIVE ACTIVE
         </Badge>
       </div>
       

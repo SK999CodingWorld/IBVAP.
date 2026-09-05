@@ -68,8 +68,8 @@ export const PeopleObjects = () => {
           <h1 className="text-3xl font-bold tracking-tight text-white">Subject Tracking</h1>
           <p className="text-slate-400">Real-time object detection and classification</p>
         </div>
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-          SIMULATION MODE
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono">
+          LIVE ACTIVE
         </Badge>
       </div>
 

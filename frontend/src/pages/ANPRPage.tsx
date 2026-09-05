@@ -40,8 +40,8 @@ export const ANPRPage = () => {
           <p className="text-slate-400">Automatic Number Plate Recognition</p>
         </div>
         <div className="flex items-center space-x-4">
-          <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-            SIMULATION MODE
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono">
+            LIVE ACTIVE
           </Badge>
           <Button variant="outline" className="bg-slate-900 border-slate-700 hover:bg-slate-800" onClick={() => alert('Feature available in production')}>
             <Download className="w-4 h-4 mr-2" />

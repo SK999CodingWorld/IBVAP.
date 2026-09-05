@@ -25,14 +25,6 @@ async def test_get_dashboard_kpis(client: AsyncClient, auth_headers: dict):
     assert "system_health_score" in data
 
 @pytest.mark.asyncio
-async def test_simulation_status(client: AsyncClient, auth_headers: dict):
-    response = await client.get("/api/simulation/status", headers=auth_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert "running" in data
-    assert "speed" in data
-
-@pytest.mark.asyncio
 async def test_evidence_verification(client: AsyncClient, auth_headers: dict):
     response = await client.get("/api/evidence/", headers=auth_headers)
     assert response.status_code == 200
