@@ -67,9 +67,11 @@ function App() {
           <Route path="/audit-log" element={<AuditLog />} />
           <Route path="/users" element={<UsersRoles />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/demo" element={<Navigate to="/command-center" replace />} />
+          <Route path="/presentation" element={<Navigate to="/command-center" replace />} />
         </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="*" element={<Navigate to="/command-center" replace />} />
       </Routes>
     </BrowserRouter>
   );
