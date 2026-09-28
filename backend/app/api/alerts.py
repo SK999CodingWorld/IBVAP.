@@ -13,11 +13,13 @@ async def list_alerts(
     type: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
     current_user: Any = Depends(get_current_user)
 ):
     # Mock data
     now_iso = datetime.now(timezone.utc).isoformat()
-    return [
+    alerts = [
         {
             "id": "ALT-0001",
             "camera_id": "CAM-01",
@@ -41,6 +43,13 @@ async def list_alerts(
             "type": "High Speed"
         }
     ]
+    if severity:
+        alerts = [a for a in alerts if a["severity"].lower() == severity.lower()]
+    if status:
+        alerts = [a for a in alerts if a["status"].lower() == status.lower()]
+    if camera_id:
+        alerts = [a for a in alerts if a["camera_id"] == camera_id]
+    return alerts[skip : skip + limit]
 
 @router.get("/stats/summary")
 async def get_alert_stats(current_user: Any = Depends(get_current_user)):

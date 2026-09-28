@@ -24,16 +24,18 @@ def main():
     
     port = int(os.environ.get("PORT", "8001"))
     host = os.environ.get("HOST", "0.0.0.0")
+    workers = int(os.environ.get("WEB_CONCURRENCY", "1"))
     
     print("=" * 70)
     print("  IBVAP - Intelligent Border Video Analytics Platform (SIH 2026)")
-    print(f"  Starting Unified Application on http://localhost:{port}")
+    print(f"  Starting Unified Application on http://localhost:{port} (Workers: {workers})")
     print("=" * 70)
     
     uvicorn.run(
         "app.main:app",
         host=host,
         port=port,
+        workers=workers,
         reload=False,
         app_dir=str(backend_dir)
     )

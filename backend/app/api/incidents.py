@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from app.core.security import get_current_user
@@ -6,9 +6,13 @@ from app.core.security import get_current_user
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 
 @router.get("")
-async def list_incidents(current_user: Any = Depends(get_current_user)):
+async def list_incidents(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: Any = Depends(get_current_user)
+):
     now_iso = datetime.now(timezone.utc).isoformat()
-    return [
+    incidents = [
         {
             "id": "INC-0001",
             "severity": "CRITICAL",
@@ -30,6 +34,7 @@ async def list_incidents(current_user: Any = Depends(get_current_user)):
             "created_at": now_iso
         }
     ]
+    return incidents[skip : skip + limit]
 
 @router.get("/stats/summary")
 async def get_incident_stats(current_user: Any = Depends(get_current_user)):

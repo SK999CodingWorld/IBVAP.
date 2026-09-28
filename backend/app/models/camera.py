@@ -16,7 +16,7 @@ class Camera(Base):
     fps = Column(Integer)
     camera_type = Column(String)
     zone = Column(String)
-    status = Column(String, default="offline") # online/offline/connecting/degraded/no_signal/tampered/frozen
+    status = Column(String, default="offline", index=True) # online/offline/connecting/degraded/no_signal/tampered/frozen
     night_vision = Column(Boolean, default=False)
     onvif_support = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -26,7 +26,7 @@ class CameraHealth(Base):
     __tablename__ = "camera_health"
 
     id = Column(Integer, primary_key=True, index=True)
-    camera_id = Column(Integer, ForeignKey("cameras.id"))
+    camera_id = Column(Integer, ForeignKey("cameras.id"), index=True)
     stream_status = Column(String)
     fps_actual = Column(Float)
     latency_ms = Column(Integer)
@@ -34,4 +34,4 @@ class CameraHealth(Base):
     ai_status = Column(String)
     health_score = Column(Integer)
     issues = Column(JSON)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)

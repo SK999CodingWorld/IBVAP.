@@ -7,8 +7,18 @@ import asyncio
 import json
 import os
 
+import httpx
+from starlette.middleware.gzip import GZipMiddleware
+
 from app.core.config import settings
-from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.database import engine, Base, AsyncSessionLocal, ping_database, DATABASE_URL
+from app.core.cache import cache
+from app.core.middleware import (
+    ObservabilityMiddleware,
+    RequestSizeLimitMiddleware,
+    RateLimitMiddleware,
+    metrics_tracker
+)
 import app.models
 from app.api import auth, users, dashboard
 from app.services.seed import seed_db
@@ -59,7 +69,8 @@ async def run_background_telemetry():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup: shared HTTP client for resilient external service calls
+    app.state.http_client = httpx.AsyncClient(timeout=10.0)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -67,15 +78,29 @@ async def lifespan(app: FastAPI):
         async with AsyncSessionLocal() as session:
             await seed_db(session)
     
-    # Launch active background telemetry service
-    bg_task = asyncio.create_task(run_background_telemetry())
+    # Launch active background telemetry service if not running unit tests
+    bg_task = None
+    if not os.environ.get("TESTING"):
+        bg_task = asyncio.create_task(run_background_telemetry())
     
     yield
-    # Shutdown
-    bg_task.cancel()
+    # Shutdown: clean resource teardown
+    if bg_task:
+        bg_task.cancel()
+    await app.state.http_client.aclose()
+    await cache.close()
     await engine.dispose()
 
-app = FastAPI(title="IBVAP - Intelligent Border Video Analytics Platform", lifespan=lifespan)
+app = FastAPI(
+    title="IBVAP - Intelligent Border Video Analytics Platform",
+    lifespan=lifespan
+)
+
+# Compression & Security Middlewares
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(ObservabilityMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -118,15 +143,56 @@ app.include_router(search.router)
 app.include_router(video_intelligence.router)
 app.include_router(ai_models.router)
 
+@app.get("/health", tags=["health"])
+async def public_health():
+    """Lightweight 200 OK healthcheck for container orchestrators and load balancers."""
+    return {"status": "ok", "service": "IBVAP", "version": "1.2.0"}
+
 @app.get("/api/health", tags=["health"])
 async def health_check():
+    db_ok = await ping_database()
     return {
-        "status": "healthy",
+        "status": "healthy" if db_ok else "degraded",
         "service": "IBVAP Enterprise Surveillance",
-        "version": "1.0.0",
+        "version": "1.2.0",
+        "database": "connected" if db_ok else "error",
         "demo_mode": settings.DEMO_MODE,
         "ai_engine": "YOLOv8 + ByteTrack + PaddleOCR + RetinaFace"
     }
+
+@app.get("/health/keys", tags=["health"])
+@app.get("/api/health/keys", tags=["health"])
+async def key_health_check():
+    """Masked diagnostics of configured credentials, database, and cache without exposing secrets."""
+    def mask_key(k: str) -> str:
+        if not k or len(k) < 6:
+            return "****"
+        return f"{k[:3]}****{k[-4:]}"
+
+    db_ok = await ping_database()
+    cache_info = await cache.ping()
+    
+    return {
+        "status": "healthy" if db_ok else "degraded",
+        "environment": settings.ENVIRONMENT,
+        "database": {"connected": db_ok, "driver": DATABASE_URL.split("://")[0]},
+        "cache": cache_info,
+        "secrets_configured": {
+            "SECRET_KEY": bool(settings.SECRET_KEY and len(settings.SECRET_KEY) >= 32),
+            "DATABASE_URL": bool(settings.DATABASE_URL),
+            "REDIS_URL": bool(settings.REDIS_URL),
+            "WEBHOOK_SECRET": bool(settings.WEBHOOK_SECRET)
+        },
+        "keys_masked": {
+            "SECRET_KEY_PREVIEW": mask_key(settings.SECRET_KEY),
+            "WEBHOOK_SECRET_PREVIEW": mask_key(settings.WEBHOOK_SECRET)
+        }
+    }
+
+@app.get("/api/system/performance-metrics", tags=["system"])
+async def get_performance_metrics():
+    """Real-time latency (p50, p95, p99) and request metrics."""
+    return metrics_tracker.get_stats()
 
 # Live Real-time AI Video Feed (MJPEG)
 @app.get("/video_feed", tags=["stream"])

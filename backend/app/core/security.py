@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.models.user import User
 
 import bcrypt
+import asyncio
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
@@ -25,6 +26,14 @@ def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode('utf-8')[:72]
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
+
+async def verify_password_async(plain_password: str, hashed_password: str) -> bool:
+    """Non-blocking password verification offloaded to thread pool."""
+    return await asyncio.to_thread(verify_password, plain_password, hashed_password)
+
+async def get_password_hash_async(password: str) -> str:
+    """Non-blocking password hash generation offloaded to thread pool."""
+    return await asyncio.to_thread(get_password_hash, password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()

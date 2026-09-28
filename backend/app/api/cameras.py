@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 from pydantic import BaseModel
 from app.core.security import get_current_user
@@ -39,7 +39,13 @@ MOCK_CAMERAS = {
 }
 
 @router.get("")
-async def list_cameras(status: Optional[str] = None, zone: Optional[str] = None, current_user = Depends(get_current_user)):
+async def list_cameras(
+    status: Optional[str] = None,
+    zone: Optional[str] = None,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    current_user = Depends(get_current_user)
+):
     cams = [dict(c) for c in MOCK_CAMERAS.values()]
     
     # Enrich with mock health
@@ -53,7 +59,7 @@ async def list_cameras(status: Optional[str] = None, zone: Optional[str] = None,
     if zone:
         cams = [c for c in cams if c["zone"] == zone]
         
-    return cams
+    return cams[skip : skip + limit]
 
 @router.get("/health/summary")
 async def get_health_summary(current_user = Depends(get_current_user)):

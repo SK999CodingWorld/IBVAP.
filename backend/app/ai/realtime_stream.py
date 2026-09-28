@@ -3,6 +3,7 @@ import numpy as np
 import threading
 import time
 import os
+import sys
 import asyncio
 import json
 from collections import defaultdict, deque
@@ -858,4 +859,6 @@ class LiveStreamProcessor:
             return list(self.alerts)
 
 live_stream_processor = LiveStreamProcessor()
-live_stream_processor.start()
+if not os.environ.get("TESTING") and "pytest" not in sys.modules and not os.environ.get("PYTEST_CURRENT_TEST"):
+    live_stream_processor.start()
+

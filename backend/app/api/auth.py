@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_current_user, create_access_token, verify_password
+from app.core.security import get_current_user, create_access_token, verify_password, verify_password_async
 from app.models.user import User
 from app.models.audit import AuditLog
 from app.schemas.auth import TokenResponse, UserResponse
@@ -18,7 +18,7 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == request.username))
     user = result.scalars().first()
     
-    is_valid_pwd = verify_password(request.password, user.hashed_password) if user else False
+    is_valid_pwd = (await verify_password_async(request.password, user.hashed_password)) if user else False
     if settings.DEMO_MODE and user and user.username == "admin" and request.password in ["ibvap-admin-2026", "admin123"]:
         is_valid_pwd = True
         

@@ -6,8 +6,8 @@ class Incident(Base):
     __tablename__ = "incidents"
     id = Column(Integer, primary_key=True, index=True)
     incident_id = Column(String, unique=True, index=True) # INC-0001
-    severity = Column(String)
-    status = Column(String, default="detected") # detected/verified/assigned/investigating/resolved
+    severity = Column(String, index=True)
+    status = Column(String, default="detected", index=True) # detected/verified/assigned/investigating/resolved
     camera_ids = Column(JSON)
     location = Column(String)
     trigger = Column(String)
@@ -18,5 +18,5 @@ class Incident(Base):
     assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
     notes = Column(JSON) # list of notes
     timeline = Column(JSON) # list of timeline events
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
