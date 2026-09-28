@@ -115,7 +115,7 @@ jobs:
 
   deploy-railway:
     needs: build-docker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && secrets.RAILWAY_TOKEN != ''
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Railway
