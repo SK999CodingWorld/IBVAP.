@@ -4,15 +4,28 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import pytest
 from httpx import AsyncClient, ASGITransport
-from app.main import app
+from app.main import app as fastapi_app
+from app.core.database import engine, Base, AsyncSessionLocal
+from app import models
+from app.services.seed import seed_db
+
+app = fastapi_app
 
 @pytest.fixture
 def anyio_backend():
     return 'asyncio'
 
+@pytest.fixture(autouse=True)
+async def init_test_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with AsyncSessionLocal() as session:
+        await seed_db(session)
+    yield
+
 @pytest.fixture
 async def client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as ac:
         yield ac
 
 @pytest.fixture

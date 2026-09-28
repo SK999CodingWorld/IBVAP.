@@ -96,6 +96,12 @@ ehthumbs.db
 **/*.log
 logs/
 **/logs/
+test_output.txt
+**/test_output.txt
+*.bak
+**/*.bak
+.venv*
+**/.venv*
 evidence_vault/storage/
 evidence_snapshots/
 scratch/
