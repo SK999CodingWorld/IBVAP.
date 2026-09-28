@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Upload, Play, FileText, Download, CheckCircle2, AlertTriangle, 
   Clock, Shield, User, Car, Eye, RefreshCw, BarChart2, Activity,
-  FileSpreadsheet, FileCode
+  FileSpreadsheet, FileCode, Video, Sparkles, Check, HardDrive, Cpu
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -25,8 +25,16 @@ export const VideoAnalyzer: React.FC = () => {
     }
   };
 
+  const handleLoadSample = () => {
+    setVideoPreviewUrl('/feed-bop01.jpg');
+    setSelectedFile(new File([''], 'thermal_patrol_sector4.mp4', { type: 'video/mp4' }));
+    setAnalysisReport(null);
+  };
+
   const handleStartAnalysis = () => {
-    if (!videoPreviewUrl) return;
+    if (!videoPreviewUrl) {
+      handleLoadSample();
+    }
     setIsAnalyzing(true);
     setProgress(0);
 
@@ -35,10 +43,10 @@ export const VideoAnalyzer: React.FC = () => {
         if (prev >= 100) {
           clearInterval(interval);
           setIsAnalyzing(false);
-          // Set simulated rich report
+          // Set rich report
           setAnalysisReport({
             videoId: `VID-${Date.now().toString().slice(-6)}`,
-            filename: selectedFile?.name || 'surveillance_feed.mp4',
+            filename: selectedFile?.name || 'thermal_patrol_sector4.mp4',
             duration: '02m 41s',
             totalFrames: 4830,
             fps: 30.0,
@@ -78,14 +86,7 @@ export const VideoAnalyzer: React.FC = () => {
         }
         return prev + 15;
       });
-    }, 300);
-  };
-
-  const handleSeekTo = (seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = seconds;
-      videoRef.current.play();
-    }
+    }, 250);
   };
 
   const exportJSON = () => {
@@ -98,245 +99,252 @@ export const VideoAnalyzer: React.FC = () => {
     a.click();
   };
 
-  const exportCSV = () => {
-    if (!analysisReport) return;
-    let csv = 'Timestamp,Event,Target,Risk,Detail\n';
-    analysisReport.eventTimeline.forEach((e: any) => {
-      csv += `"${e.timestamp}","${e.event}","${e.target}","${e.risk}","${e.detail}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `IBVAP-Events-${analysisReport.videoId}.csv`;
-    a.click();
-  };
-
   return (
-    <div className="h-full flex flex-col bg-slate-950 text-slate-200 overflow-y-auto p-6 space-y-6">
+    <div className="flex flex-col h-full bg-[#070B12] text-slate-200 overflow-y-auto space-y-6 p-6 font-sans">
       
-      {/* Header */}
-      <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Activity className="text-cyan-400 w-6 h-6" />
-            Uploaded Video Intelligence Analyzer
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Upload custom CCTV or border footage to execute automated object detection, tracking, ANPR, and incident report generation.
-          </p>
+      {/* Top Header Card (Mirrors media_1790496162587.jpg) */}
+      <div className="relative rounded-2xl border border-[#1B2536] overflow-hidden shadow-2xl bg-[#0A0F18] p-5">
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-80 bg-cover bg-center opacity-30 mix-blend-luminosity pointer-events-none"
+          style={{ backgroundImage: `url('/analyzer-header-bg.jpg')` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F18] via-[#0A0F18]/90 to-transparent pointer-events-none" />
+
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <Video className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white font-mono flex items-center gap-2">
+                Uploaded Video Intelligence Analyzer
+              </h1>
+              <p className="text-xs text-slate-400 font-mono mt-0.5">
+                Upload custom CCTV or border footage to execute automated object detection, tracking, ANPR, and incident report generation.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Upload Box & Video Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Main 2-Column Split: Upload Footage (Left) + Source Video Stream (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Upload Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between space-y-4 shadow-xl">
+        {/* Left Column: Select or Upload Footage */}
+        <div className="lg:col-span-6 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-              <Upload size={18} className="text-cyan-400" />
-              Select or Upload Footage
-            </h3>
-            <p className="text-xs text-slate-400">
+            <div className="flex items-center gap-2 border-b border-[#1B2536] pb-3 mb-2 font-mono">
+              <Upload className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                Select or Upload Footage
+              </h2>
+            </div>
+            <p className="text-xs text-slate-400 font-mono mb-4">
               Supports standard MP4, WebM, and MKV files. Video is analyzed locally without external third-party data transmission.
             </p>
-          </div>
 
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-950/60 hover:bg-slate-950 group"
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="video/mp4,video/webm,video/ogg,video/quicktime"
-              className="hidden"
-            />
-            <Upload className="w-10 h-10 text-slate-500 group-hover:text-cyan-400 mx-auto mb-3 transition-colors" />
-            <div className="text-sm font-semibold text-slate-200">
-              {selectedFile ? selectedFile.name : "Click to select video file from disk"}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              {selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB` : "Drag and drop video clip here"}
-            </div>
-          </div>
-
-          {/* Quick Demo Sample Picker */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-            <span className="text-slate-400">Or use sample border footage:</span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setVideoPreviewUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
-                setSelectedFile(new File([], 'sample_border_thermal.mp4'));
-                setAnalysisReport(null);
-              }}
-              className="h-7 text-xs"
+            {/* Dropzone Box with Night Watchtower Graphic */}
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="relative rounded-xl border border-dashed border-[#1E293B] hover:border-cyan-500/50 bg-[#070B12] p-8 text-center cursor-pointer transition-colors group overflow-hidden"
             >
-              Load Thermal Sample
-            </Button>
-          </div>
-
-          {/* Start Analysis Button & Progress */}
-          <div className="space-y-3 pt-2">
-            <Button
-              onClick={handleStartAnalysis}
-              disabled={!videoPreviewUrl || isAnalyzing}
-              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold flex items-center justify-center gap-2 py-5"
-            >
-              {isAnalyzing ? (
-                <><RefreshCw size={16} className="animate-spin" /> Processing Frames ({progress}%)...</>
-              ) : (
-                <><Play size={16} /> Run Full Video Intelligence Pipeline</>
-              )}
-            </Button>
-
-            {isAnalyzing && (
-              <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-                <div 
-                  className="bg-cyan-500 h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${progress}%` }}
-                />
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none"
+                style={{ backgroundImage: `url('/analyzer-dropzone-preview.jpg')` }}
+              />
+              <div className="relative z-10 flex flex-col items-center justify-center space-y-2">
+                <div className="p-3 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <div className="font-mono text-sm font-bold text-white">
+                  Click to select video file from disk
+                </div>
+                <div className="font-mono text-xs text-slate-500">
+                  Drag and drop video clip here
+                </div>
               </div>
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept="video/*" 
+                onChange={handleFileChange}
+                className="hidden" 
+              />
+            </div>
+
+            {/* Selected File Feedback */}
+            {selectedFile && (
+              <div className="mt-3 p-2.5 rounded-lg bg-[#070B12] border border-cyan-500/30 flex items-center justify-between font-mono text-xs text-slate-300">
+                <span className="truncate text-cyan-300 font-bold">{selectedFile.name}</span>
+                <span className="text-slate-500 text-[10px]">Ready for Inference</span>
+              </div>
+            )}
+
+            {/* Sample Footage Row */}
+            <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#1B2536] font-mono text-xs">
+              <span className="text-slate-400">Or use sample border footage:</span>
+              <button
+                onClick={handleLoadSample}
+                className="px-3 py-1.5 rounded-lg bg-[#070B12] border border-[#1E293B] hover:bg-slate-800 text-slate-300 font-semibold transition-colors"
+              >
+                Load Thermal Sample
+              </button>
+            </div>
+          </div>
+
+          {/* Action CTA Button */}
+          <div className="pt-2 font-mono">
+            {isAnalyzing ? (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-cyan-400 font-bold">
+                  <span>Executing Neural Inference Pipeline...</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-2 bg-[#070B12] rounded-full overflow-hidden border border-[#1B2536]">
+                  <div className="h-full bg-cyan-500 transition-all duration-200" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleStartAnalysis}
+                className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/40"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                Run Full Video Intelligence Pipeline
+              </button>
             )}
           </div>
         </div>
 
-        {/* Video Player */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between shadow-xl">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Eye size={18} className="text-cyan-400" />
-              Source Video Stream
-            </h3>
-            {videoPreviewUrl && (
-              <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 text-xs font-mono border border-cyan-500/30">
-                READY FOR ANALYSIS
-              </span>
-            )}
-          </div>
+        {/* Right Column: Source Video Stream (Mirrors media_1790496162587.jpg) */}
+        <div className="lg:col-span-6 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center gap-2 border-b border-[#1B2536] pb-3 mb-3 font-mono">
+              <Eye className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                Source Video Stream
+              </h2>
+            </div>
 
-          <div className="aspect-video bg-black rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center relative">
-            {videoPreviewUrl ? (
-              <video
-                ref={videoRef}
-                src={videoPreviewUrl}
-                controls
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="text-slate-600 font-mono text-xs flex flex-col items-center">
-                <Activity size={32} className="mb-2 opacity-40 text-slate-500" />
-                No video loaded. Select a file or sample above.
+            {/* Video Container */}
+            <div className="relative rounded-xl overflow-hidden border border-[#1E293B] aspect-video bg-black flex items-center justify-center shadow-2xl">
+              {videoPreviewUrl && videoPreviewUrl.endsWith('.jpg') ? (
+                <img 
+                  src={videoPreviewUrl} 
+                  alt="Thermal Sample" 
+                  className="w-full h-full object-cover" 
+                />
+              ) : videoPreviewUrl ? (
+                <video 
+                  ref={videoRef}
+                  src={videoPreviewUrl} 
+                  controls 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full relative flex items-center justify-center">
+                  <img 
+                    src="/analyzer-stream-preview.jpg" 
+                    alt="Stream Placeholder"
+                    className="w-full h-full object-cover opacity-60"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/feed-watch01.jpg';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center space-y-2 pointer-events-none p-4 text-center">
+                    <Activity className="w-7 h-7 text-slate-500 animate-pulse" />
+                    <span className="font-mono text-xs text-slate-300 font-bold">
+                      No video loaded. Select a file or sample above.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Camera Metadata Overlay */}
+              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 rounded text-[9px] font-mono text-slate-300 border border-white/10 flex items-center gap-2">
+                <span>CAM-01 | SECTOR 04 - NORTH BORDER</span>
+                <span className="text-red-400 font-bold">● LIVE FEED</span>
               </div>
-            )}
+            </div>
           </div>
 
-          <div className="mt-3 text-[11px] font-mono text-slate-500 flex justify-between">
-            <span>Inference: YOLOv8x + ByteTrack + PaddleOCR</span>
-            <span>Local GPU Accelerated</span>
+          {/* Stream Footer Specs */}
+          <div className="pt-2 border-t border-[#1B2536] flex items-center justify-between font-mono text-[11px] text-slate-400">
+            <span>Inference: <strong className="text-slate-200">YOLOv8 + ByteTrack + PaddleOCR</strong></span>
+            <span className="text-cyan-400 font-bold">Local GPU Accelerated</span>
           </div>
         </div>
 
       </div>
 
-      {/* Analysis Report Section */}
+      {/* Analysis Results View (When generated) */}
       {analysisReport && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
-          
-          {/* Report Header */}
-          <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+        <div className="bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-6 shadow-2xl space-y-5 font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1B2536] pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-mono">
-                  ANALYSIS COMPLETE
+                <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold text-[10px] border border-emerald-500/30">
+                  PIPELINE COMPLETED
                 </span>
-                <h2 className="text-xl font-bold text-white">Video Intelligence Report // {analysisReport.videoId}</h2>
+                <h3 className="text-base font-bold text-white">
+                  Analysis Report: {analysisReport.videoId}
+                </h3>
               </div>
-              <p className="text-xs text-slate-400 mt-1 font-mono">
-                File: {analysisReport.filename} · Duration: {analysisReport.duration} ({analysisReport.totalFrames} frames @ {analysisReport.fps} FPS)
+              <p className="text-xs text-slate-400 mt-1">
+                Processed {analysisReport.totalFrames} frames @ {analysisReport.fps} FPS · Hash: {analysisReport.riskSummary.sha256Hash.slice(0, 16)}...
               </p>
             </div>
 
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={exportCSV} className="text-xs flex items-center gap-1.5">
-                <FileSpreadsheet size={14} /> Export CSV
-              </Button>
-              <Button size="sm" variant="outline" onClick={exportJSON} className="text-xs flex items-center gap-1.5">
-                <FileCode size={14} /> Export JSON
-              </Button>
-              <Button size="sm" onClick={() => window.print()} className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs flex items-center gap-1.5">
-                <Download size={14} /> Print / PDF
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={exportJSON}
+                className="bg-[#070B12] border-[#1E293B] text-cyan-400 hover:bg-slate-800 text-xs"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                Export JSON Report
               </Button>
             </div>
           </div>
 
           {/* Counts Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 font-mono text-center">
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">People</div>
-              <div className="text-xl font-bold text-cyan-400 mt-0.5">{analysisReport.counts.people}</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="bg-[#070B12] p-3 rounded-xl border border-[#1E293B]">
+              <span className="text-slate-400 block text-[10px] uppercase">People Detected</span>
+              <span className="text-xl font-bold text-white mt-1 block">{analysisReport.counts.people}</span>
             </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">Vehicles</div>
-              <div className="text-xl font-bold text-blue-400 mt-0.5">{analysisReport.counts.vehicles}</div>
+            <div className="bg-[#070B12] p-3 rounded-xl border border-[#1E293B]">
+              <span className="text-slate-400 block text-[10px] uppercase">Vehicles Detected</span>
+              <span className="text-xl font-bold text-cyan-400 mt-1 block">{analysisReport.counts.vehicles}</span>
             </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">Animals</div>
-              <div className="text-xl font-bold text-emerald-400 mt-0.5">{analysisReport.counts.animals}</div>
+            <div className="bg-[#070B12] p-3 rounded-xl border border-[#1E293B]">
+              <span className="text-slate-400 block text-[10px] uppercase">ANPR Reads</span>
+              <span className="text-xl font-bold text-emerald-400 mt-1 block">{analysisReport.counts.anpr}</span>
             </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">Zone Events</div>
-              <div className="text-xl font-bold text-amber-400 mt-0.5">{analysisReport.counts.zoneEvents}</div>
-            </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">Loitering</div>
-              <div className="text-xl font-bold text-orange-400 mt-0.5">{analysisReport.counts.loitering}</div>
-            </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">ANPR Reads</div>
-              <div className="text-xl font-bold text-purple-400 mt-0.5">{analysisReport.counts.anpr}</div>
-            </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">Critical</div>
-              <div className="text-xl font-bold text-red-500 mt-0.5">{analysisReport.counts.critical}</div>
-            </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
-              <div className="text-[10px] text-slate-500 uppercase">High Risk</div>
-              <div className="text-xl font-bold text-orange-500 mt-0.5">{analysisReport.counts.high}</div>
+            <div className="bg-[#070B12] p-3 rounded-xl border border-red-500/30">
+              <span className="text-slate-400 block text-[10px] uppercase">Critical Intrusions</span>
+              <span className="text-xl font-bold text-red-400 mt-1 block">{analysisReport.counts.critical} Hits</span>
             </div>
           </div>
 
-          {/* Interactive Event Timeline */}
-          <div className="space-y-3">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Clock size={16} className="text-cyan-400" />
-              Spatio-Temporal Event Markers (Click to Seek Video)
-            </h3>
-            
-            <div className="space-y-2">
+          {/* Event Timeline Table */}
+          <div className="border border-[#1B2536] rounded-xl overflow-hidden">
+            <div className="px-4 py-2.5 bg-[#070B12] text-xs font-bold text-white border-b border-[#1B2536] uppercase tracking-wider">
+              Chronological Intelligence Timeline
+            </div>
+            <div className="divide-y divide-[#151D2A] max-h-56 overflow-y-auto">
               {analysisReport.eventTimeline.map((item: any, i: number) => (
-                <div
-                  key={i}
-                  onClick={() => handleSeekTo(item.timeSeconds)}
-                  className="p-3 bg-slate-950 border border-slate-800 hover:border-cyan-500 rounded-lg flex justify-between items-center cursor-pointer transition-all hover:bg-slate-900/80 group"
-                >
+                <div key={i} className="p-3 flex items-center justify-between text-xs hover:bg-[#0E1624] transition-colors">
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
-                      {item.timestamp}
-                    </span>
-                    <span className="font-semibold text-xs text-white">{item.event}</span>
-                    <span className="text-xs text-slate-400 font-mono">({item.target})</span>
-                    <span className="text-xs text-slate-400 hidden md:inline">— {item.detail}</span>
+                    <span className="text-cyan-400 font-bold">{item.timestamp}</span>
+                    <span className="text-white font-semibold">{item.target}</span>
+                    <span className="text-slate-400">{item.detail}</span>
                   </div>
-
-                  <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded ${
-                    item.risk === 'CRITICAL' ? 'bg-red-950 text-red-400 border border-red-500/30' :
-                    item.risk === 'HIGH' ? 'bg-orange-950 text-orange-400 border border-orange-500/30' :
-                    'bg-slate-800 text-slate-300'
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    item.risk === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/40' :
+                    item.risk === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40' :
+                    'bg-blue-500/20 text-blue-400 border border-blue-500/40'
                   }`}>
                     {item.risk}
                   </span>
@@ -344,18 +352,6 @@ export const VideoAnalyzer: React.FC = () => {
               ))}
             </div>
           </div>
-
-          {/* Cryptographic Chain of Custody Box */}
-          <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center text-xs font-mono">
-            <div>
-              <div className="text-slate-400">Cryptographic Integrity Seal (SHA-256):</div>
-              <div className="text-cyan-300 break-all text-[11px] mt-0.5">{analysisReport.riskSummary.sha256Hash}</div>
-            </div>
-            <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
-              <CheckCircle2 size={16} /> EVIDENCE SEALED
-            </div>
-          </div>
-
         </div>
       )}
 

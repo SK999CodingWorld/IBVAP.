@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user, create_access_token, verify_password
 from app.models.user import User
@@ -18,7 +19,7 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalars().first()
     
     is_valid_pwd = verify_password(request.password, user.hashed_password) if user else False
-    if user and user.username == "admin" and request.password in ["ibvap-admin-2026", "admin123"]:
+    if settings.DEMO_MODE and user and user.username == "admin" and request.password in ["ibvap-admin-2026", "admin123"]:
         is_valid_pwd = True
         
     if not user or not is_valid_pwd:

@@ -143,12 +143,14 @@ class FaceRecognitionEngine:
         Crops face region from a detected person box, computes embedding, 
         and matches against known database.
         """
+        if frame is None or getattr(frame, "size", 0) == 0:
+            return {"status": "UNKNOWN", "name": "UNKNOWN", "similarity": 0.0, "is_blacklist": False}
         x1, y1, x2, y2 = person_box
         h, w = frame.shape[:2]
         
         # Clamp coordinates
-        x1, y1 = max(0, x1), max(0, y1)
-        x2, y2 = min(w, x2), min(h, y2)
+        x1, y1 = max(0, int(x1)), max(0, int(y1))
+        x2, y2 = min(w, int(x2)), min(h, int(y2))
         
         if x2 - x1 < 20 or y2 - y1 < 20:
             return {"status": "UNKNOWN", "name": "UNKNOWN", "similarity": 0.0, "is_blacklist": False}

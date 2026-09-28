@@ -61,14 +61,23 @@ async def add_to_watchlist(
     file: UploadFile = File(...)
 ):
     """Uploads a new face image and registers it into the face recognition watchlist"""
-    clean_name = name.strip().replace(" ", "_")
+    safe_name = os.path.basename(name.strip()).replace(" ", "_")
+    # Remove any dangerous characters
+    safe_name = "".join(c for c in safe_name if c.isalnum() or c in ("_", "-"))
+    if not safe_name:
+        raise HTTPException(status_code=400, detail="Invalid face profile name")
+        
     tag = "BLACKLIST" if is_blacklist else "AUTHORISED"
-    filename = f"{clean_name}_{tag}.jpg"
-    filepath = os.path.join(face_engine.database_dir, filename)
+    filename = f"{safe_name}_{tag}.jpg"
+    db_dir = os.path.abspath(face_engine.database_dir)
+    filepath = os.path.abspath(os.path.join(db_dir, filename))
+    if not filepath.startswith(db_dir):
+        raise HTTPException(status_code=400, detail="Invalid path")
 
     try:
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        file.file.close()
         face_engine.reload_database()
         return {"status": "success", "message": f"Added {name} to watchlist", "filename": filename}
     except Exception as e:
@@ -78,15 +87,23 @@ async def add_to_watchlist(
 @router.delete("/api/faces/watchlist/{name}")
 async def delete_from_watchlist(name: str):
     """Removes a face profile from the watchlist database"""
+    clean_target = os.path.basename(name.strip()).lower().replace(" ", "_")
+    if not clean_target:
+        raise HTTPException(400, "Profile name cannot be empty")
+        
     removed = False
-    for filename in os.listdir(face_engine.database_dir):
-        if name.lower() in filename.lower():
-            filepath = os.path.join(face_engine.database_dir, filename)
-            try:
-                os.remove(filepath)
-                removed = True
-            except OSError:
-                pass
+    db_dir = os.path.abspath(face_engine.database_dir)
+    for filename in os.listdir(db_dir):
+        # Match only exact base profile name or standard prefix
+        base_fn = os.path.splitext(filename)[0].lower()
+        if base_fn == clean_target or base_fn.startswith(f"{clean_target}_"):
+            filepath = os.path.abspath(os.path.join(db_dir, filename))
+            if filepath.startswith(db_dir):
+                try:
+                    os.remove(filepath)
+                    removed = True
+                except OSError:
+                    pass
     if removed:
         face_engine.reload_database()
         return {"status": "success", "message": f"Removed {name} from watchlist"}

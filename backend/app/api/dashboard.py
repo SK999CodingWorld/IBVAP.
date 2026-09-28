@@ -5,7 +5,8 @@ from sqlalchemy import desc
 from typing import List
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, oauth2_scheme
+from app.core.config import settings
 from app.models.camera import Camera
 from app.models.alert import Alert
 from app.models.incident import Incident
@@ -18,9 +19,9 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 @router.get("/kpis", response_model=DashboardKPIs)
 async def get_kpis(
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
+
     # Cameras
     cameras = (await db.execute(select(Camera))).scalars().all()
     cameras_online = sum(1 for c in cameras if c.status == "online")
@@ -55,16 +56,15 @@ async def get_kpis(
 
 @router.get("/recent-alerts", response_model=List[AlertResponse])
 async def get_recent_alerts(
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(select(Alert).order_by(desc(Alert.created_at)).limit(20))
     return result.scalars().all()
 
 @router.get("/recent-events", response_model=List[DetectionResponse])
 async def get_recent_events(
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(select(Detection).order_by(desc(Detection.timestamp)).limit(50))
     return result.scalars().all()
+

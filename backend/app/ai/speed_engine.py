@@ -42,7 +42,11 @@ class VehicleSpeedEstimator:
         history.append((current_time, cx, cy))
 
         if len(history) < 4:
-            speed_kmh = self.smoothed_speeds.get(track_id, 24.0 + (track_id % 12))
+            try:
+                tid_num = int("".join(c for c in str(track_id) if c.isdigit()) or 0)
+            except Exception:
+                tid_num = 0
+            speed_kmh = self.smoothed_speeds.get(track_id, 24.0 + (tid_num % 12))
             return {
                 "speed_kmh": round(speed_kmh, 1),
                 "is_overspeeding": speed_kmh > self.speed_limit_kmh,
@@ -91,7 +95,7 @@ class VehicleSpeedEstimator:
                     "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "time": time.strftime("%H:%M:%S"),
                     "object_type": vehicle_type.upper(),
-                    "track_id": int(track_id),
+                    "track_id": track_id,
                     "confidence": 96.0,
                     "severity": "CRITICAL" if speed_kmh > (self.speed_limit_kmh + 15) else "HIGH",
                     "type": f"⚠️ OVERSPEEDING: {vehicle_type.upper()} at {speed_kmh:.0f} km/h (Limit: {self.speed_limit_kmh:.0f} km/h) #{track_id}",

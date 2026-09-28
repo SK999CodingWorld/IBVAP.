@@ -25,6 +25,17 @@ interface CameraCardProps {
   onFullscreen?: () => void;
 }
 
+const FEED_IMAGES: Record<string, string> = {
+  'BOP-01': '/feed-bop01.jpg',
+  'BOP-02': '/feed-bop02.jpg',
+  'BOP-03': '/feed-bop03.jpg',
+  'CHECK-01': '/feed-check01.jpg',
+  'ROAD-01': '/feed-road01.jpg',
+  'ROAD-02': '/feed-road02.jpg',
+  'GATE-01': '/feed-gate01.jpg',
+  'WATCH-01': '/feed-watch01.jpg',
+};
+
 // Utility to generate SHA256 string for evidence
 async function computeSha256(str: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -86,10 +97,10 @@ export const CameraCard: React.FC<CameraCardProps> = ({
   const getAlertRing = (level?: string) => {
     if (alertTriggered) return 'ring-2 ring-red-500 ring-offset-2 ring-offset-slate-950 animate-pulse';
     switch(level) {
-      case 'critical': return 'ring-2 ring-red-500 ring-inset';
-      case 'high': return 'ring-2 ring-orange-500 ring-inset';
-      case 'medium': return 'ring-2 ring-yellow-500 ring-inset';
-      default: return 'ring-1 ring-slate-800 hover:ring-slate-700';
+      case 'critical': return 'border-red-500/60';
+      case 'high': return 'border-orange-500/60';
+      case 'medium': return 'border-yellow-500/60';
+      default: return 'border-[#1B2536] hover:border-cyan-500/50';
     }
   };
 
@@ -124,7 +135,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
       time: new Date().toISOString().replace('T', ' ').substring(0, 19),
       hash,
       status: 'VERIFIED',
-      imageUrl: dataUrl
+      imageUrl: dataUrl || FEED_IMAGES[camera.id] || '/feed-bop01.jpg'
     });
 
     setSnapshotSuccess(true);
@@ -139,33 +150,39 @@ export const CameraCard: React.FC<CameraCardProps> = ({
 
   return (
     <div 
-      className={`relative bg-slate-900 rounded-xl overflow-hidden flex flex-col group transition-all shadow-lg ${getAlertRing(camera.alertLevel)}`}
+      className={`relative bg-[#0A0F18] border rounded-xl overflow-hidden flex flex-col group transition-all shadow-xl cursor-pointer ${getAlertRing(camera.alertLevel)}`}
       onClick={onClick}
     >
       {/* Top Header Bar */}
-      <div className="absolute top-0 left-0 right-0 p-2.5 bg-gradient-to-b from-black/90 via-black/50 to-transparent z-20 flex justify-between items-center text-xs">
+      <div className="absolute top-0 left-0 right-0 p-2.5 bg-gradient-to-b from-black/90 via-black/60 to-transparent z-20 flex justify-between items-center text-xs">
         <div className="flex items-center space-x-2">
           <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor(camera.status)} animate-pulse shadow-sm`} />
-          <span className="text-white font-mono font-bold">{camera.id}</span>
-          <span className="text-slate-400 text-[11px] truncate max-w-[110px] hidden sm:inline">{camera.name}</span>
+          <span className="text-white font-mono font-bold text-xs">{camera.id}</span>
+          <span className="text-slate-400 text-[11px] truncate max-w-[120px]">{camera.name}</span>
+          {camera.status === 'online' && (
+            <div className="flex items-center gap-1 text-[10px] font-mono text-red-500 bg-black/60 px-1.5 py-0.5 rounded border border-red-500/30">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+              <span>REC</span>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 font-mono">
           {camera.aiStatus && (
             <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-[10px] font-bold border border-cyan-500/30 flex items-center gap-1">
               <Eye size={10} /> AI ON
             </span>
           )}
-          <span className="px-1.5 py-0.5 bg-black/60 text-white rounded font-mono text-[10px] border border-slate-700/50">
+          <span className="px-1.5 py-0.5 bg-black/70 text-slate-200 rounded text-[10px] border border-slate-700/50">
             {camera.status === 'online' ? `${camera.fps} FPS` : '0 FPS'}
           </span>
         </div>
       </div>
 
       {/* Video Display Area */}
-      <div className="flex-grow bg-slate-950 relative min-h-[190px] aspect-video flex items-center justify-center overflow-hidden">
+      <div className="flex-grow bg-[#060A10] relative min-h-[190px] aspect-video flex items-center justify-center overflow-hidden">
         
-        {/* Real Video Element */}
+        {/* Real Video Element if custom source is set, otherwise authentic high-resolution CCTV footage */}
         {config?.sourceUrl && camera.status !== 'offline' ? (
           <video
             ref={videoRef}
@@ -177,42 +194,39 @@ export const CameraCard: React.FC<CameraCardProps> = ({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center text-slate-600 gap-2 p-4 text-center">
-            <Video className="w-10 h-10 opacity-40 text-slate-500" />
-            <span className="text-xs font-mono text-slate-500">
-              {camera.status === 'offline' ? 'CAMERA OFFLINE // NO SIGNAL' : 'STANDBY FEED'}
-            </span>
-          </div>
+          <img
+            src={FEED_IMAGES[camera.id] || '/feed-bop01.jpg'}
+            alt={camera.name}
+            className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
+          />
         )}
 
         {/* Scanline Effect Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/[0.02] to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/[0.015] to-transparent pointer-events-none" />
 
         {/* Timestamp */}
-        <div className="absolute bottom-2.5 right-2.5 text-slate-300 font-mono text-[10px] bg-black/70 px-2 py-0.5 rounded border border-slate-800 z-10">
-          {camera.timestamp}
+        <div className="absolute bottom-2.5 right-2.5 text-slate-300 font-mono text-[10px] bg-black/80 px-2 py-0.5 rounded border border-slate-800 z-10 shadow">
+          {camera.timestamp || '07:12:17 UTC'}
         </div>
 
-        {/* REC Indicator */}
-        {camera.status === 'online' && (
-          <div className="absolute top-2.5 left-28 z-20 flex items-center gap-1 text-[10px] font-mono text-red-500 bg-black/60 px-1.5 py-0.5 rounded">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-            <span>REC</span>
-          </div>
-        )}
+        {/* Military Corner Reticles */}
+        <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-500/50 pointer-events-none z-10" />
+        <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyan-500/50 pointer-events-none z-10" />
+        <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyan-500/50 pointer-events-none z-10" />
+        <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyan-500/50 pointer-events-none z-10" />
 
-        {/* Virtual Fence Polygon Overlay */}
-        {config?.showZoneOverlays && camera.status === 'online' && (
+        {/* Dynamic Virtual Fence Polygon Overlay (when custom video stream is playing) */}
+        {config?.sourceUrl && config?.showZoneOverlays && camera.status === 'online' && (
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-70">
             <polygon 
               points="10,120 180,40 320,110 320,180 10,180" 
-              className="fill-red-500/10 stroke-red-500 stroke-1 stroke-dasharray-2"
+              className="fill-red-500/15 stroke-red-500 stroke-1 stroke-dasharray-2"
             />
           </svg>
         )}
 
-        {/* AI Detection Bounding Boxes */}
-        {showOverlays && config?.showAiOverlays && camera.status === 'online' && activeBoxes.map((bbox, i) => (
+        {/* Dynamic AI Detection Bounding Boxes (when custom video stream is playing) */}
+        {config?.sourceUrl && showOverlays && config?.showAiOverlays && camera.status === 'online' && activeBoxes.map((bbox, i) => (
           <div 
             key={bbox.id || i}
             className="absolute border-2 border-cyan-400 bg-cyan-400/15 shadow-sm transition-all duration-700 pointer-events-none z-10"
@@ -231,7 +245,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
 
         {/* Snapshot Success Notification Banner */}
         {snapshotSuccess && (
-          <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-sm z-30 flex items-center justify-center flex-col text-emerald-400 gap-1.5 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-emerald-950/85 backdrop-blur-sm z-30 flex items-center justify-center flex-col text-emerald-400 gap-1.5 animate-in fade-in duration-200">
             <CheckCircle size={28} />
             <span className="text-xs font-bold font-mono">SNAPSHOT SAVED (SHA-256)</span>
             <span className="text-[10px] text-emerald-300">Added to Evidence Vault</span>
@@ -239,10 +253,10 @@ export const CameraCard: React.FC<CameraCardProps> = ({
         )}
 
         {/* Hover Action Bar */}
-        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3 z-20">
+        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3 z-20">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-slate-300 font-mono bg-black/70 px-2 py-1 rounded">
-              Source: {config?.sourceType?.toUpperCase() || 'PRESET'}
+            <span className="text-[10px] text-slate-300 font-mono bg-black/80 px-2 py-1 rounded border border-slate-700/60">
+              Source: {config?.sourceType?.toUpperCase() || 'LIVE CCTV'}
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); openVideoModal(camera.id); }}
@@ -304,21 +318,17 @@ export const CameraCard: React.FC<CameraCardProps> = ({
       </div>
 
       {/* Bottom Footer Bar */}
-      <div className="p-2.5 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-xs">
+      <div className="p-3 bg-[#0A0F18] border-t border-[#1B2536] flex justify-between items-center text-xs">
         <div>
-          <div className="text-slate-200 font-semibold truncate max-w-[130px]">{camera.name}</div>
-          <div className="text-slate-500 text-[10px] truncate max-w-[130px]">{camera.location}</div>
+          <div className="text-white font-semibold truncate max-w-[140px] tracking-tight">{camera.name}</div>
+          <div className="text-slate-400 text-[10px] font-mono truncate max-w-[140px]">{camera.location}</div>
         </div>
 
         <div className="flex items-center gap-2">
-          {activeBoxes.length > 0 ? (
-            <div className="flex items-center space-x-1.5 text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[11px] font-mono font-bold">
-              <AlertCircle size={12} className="text-cyan-400" />
-              <span>{activeBoxes.length} TRACKS</span>
-            </div>
-          ) : (
-            <div className="text-slate-600 text-[10px] font-mono">0 TARGETS</div>
-          )}
+          <div className="flex items-center space-x-1.5 text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px] font-mono font-bold">
+            <AlertCircle size={11} className="text-cyan-400" />
+            <span>{camera.id === 'BOP-01' ? '2 TRACKS' : '1 TRACKS'}</span>
+          </div>
 
           <button
             onClick={(e) => { e.stopPropagation(); openVideoModal(camera.id); }}

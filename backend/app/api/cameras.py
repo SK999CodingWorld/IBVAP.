@@ -40,17 +40,18 @@ MOCK_CAMERAS = {
 
 @router.get("")
 async def list_cameras(status: Optional[str] = None, zone: Optional[str] = None, current_user = Depends(get_current_user)):
-    cams = list(MOCK_CAMERAS.values())
-    if status:
-        cams = [c for c in cams if c["status"] == status]
-    if zone:
-        cams = [c for c in cams if c["zone"] == zone]
+    cams = [dict(c) for c in MOCK_CAMERAS.values()]
     
     # Enrich with mock health
     for c in cams:
         health = get_camera_health(c["id"])
         c["health_score"] = health["score"]
         c["status"] = "online" if health["stream_active"] else "offline"
+        
+    if status:
+        cams = [c for c in cams if c["status"] == status]
+    if zone:
+        cams = [c for c in cams if c["zone"] == zone]
         
     return cams
 

@@ -212,8 +212,9 @@ class BehaviorAnalyticsEngine:
                         per_person_behaviors[id1] = behavior_fight
                         per_person_behaviors[id2] = behavior_fight
 
+                        k1, k2 = sorted([str(id1), str(id2)])
                         self._check_and_emit_alert(
-                            alert_key=f"fight_{min(id1, id2)}_{max(id1, id2)}",
+                            alert_key=f"fight_{k1}_{k2}",
                             current_time=current_time,
                             cooldown=5.0,
                             alert_dict={

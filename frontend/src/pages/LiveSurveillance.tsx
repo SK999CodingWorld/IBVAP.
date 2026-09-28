@@ -10,12 +10,12 @@ import { useVideoStore } from '@/stores/videoStore';
 import { Button } from '@/components/ui/Button';
 
 const DEMO_CAMERAS = [
-  { id: 'BOP-01', name: 'Border Outpost 1 PTZ', location: 'Sector 4 Red Zone', status: 'online', fps: 30, aiStatus: true, detections: 1, alertLevel: 'critical', zone: 'red' },
+  { id: 'BOP-01', name: 'Border Outpost 1 PTZ', location: 'Sector 4 Red Zone', status: 'online', fps: 30, aiStatus: true, detections: 2, alertLevel: 'critical', zone: 'red' },
   { id: 'BOP-02', name: 'Border Outpost 2 Thermal', location: 'Sector 4 Buffer Zone', status: 'online', fps: 30, aiStatus: true, detections: 1, alertLevel: 'high', zone: 'red' },
   { id: 'BOP-03', name: 'Border Outpost 3 Fixed', location: 'Perimeter West', status: 'online', fps: 28, aiStatus: true, detections: 1, alertLevel: 'low', zone: 'red' },
   { id: 'CHECK-01', name: 'Highway Check Alpha', location: 'Highway 1 Access', status: 'online', fps: 30, aiStatus: true, detections: 1, alertLevel: 'medium', zone: 'yellow' },
   { id: 'ROAD-01', name: 'Approach Road Aerial', location: 'Sector 2 Corridor', status: 'online', fps: 30, aiStatus: true, detections: 1, zone: 'yellow' },
-  { id: 'ROAD-02', name: 'Approach Road South', location: 'Sector 2 Perimeter', status: 'degraded', fps: 15, aiStatus: true, detections: 0, zone: 'yellow' },
+  { id: 'ROAD-02', name: 'Approach Road South', location: 'Sector 2 Perimeter', status: 'degraded', fps: 25, aiStatus: true, detections: 1, zone: 'yellow' },
   { id: 'GATE-01', name: 'HQ Base Camp Entry', location: 'Main Headquarters', status: 'online', fps: 30, aiStatus: true, detections: 0, zone: 'green' },
   { id: 'WATCH-01', name: 'Watchtower East FOV', location: 'Sector 5 Outpost', status: 'online', fps: 25, aiStatus: true, detections: 0, zone: 'red' },
 ] as any[];
@@ -70,106 +70,119 @@ export const LiveSurveillance: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-950 text-slate-300 overflow-hidden">
+    <div className="h-full flex flex-col bg-[#070B12] text-slate-300 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
       
-      {/* Top Action Toolbar */}
-      <div className="flex-none p-4 bg-slate-900/90 backdrop-blur-sm border-b border-slate-800 flex flex-wrap gap-4 justify-between items-center z-10">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+      {/* ── TOP ACTION TOOLBAR (WITH SOLDIER / WATCHTOWER SILHOUETTE) ── */}
+      <div 
+        className="p-4 bg-[#0A0F18] border border-[#1B2536] rounded-xl flex flex-wrap gap-4 justify-between items-center relative overflow-hidden shadow-xl"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 50%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/surveillance-header-bg.jpg')`,
+          backgroundPosition: 'right center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'contain'
+        }}
+      >
+        <div className="flex items-center space-x-3 z-10">
+          <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-lg shadow-cyan-950/40">
             <Monitor className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 font-mono">
               Live Surveillance Wall
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-mono rounded border border-emerald-500/20">
+              <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-bold rounded border border-emerald-500/30">
                 8 CHANNELS LIVE
               </span>
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-[11px] text-slate-400 font-mono">
               Interactive multi-stream CCTV grid with active AI bounding boxes, ANPR, and custom video inputs.
             </p>
           </div>
         </div>
         
-        {/* Controls & Modals */}
-        <div className="flex items-center flex-wrap gap-3">
+        {/* Controls & Toolbar Actions */}
+        <div className="flex items-center flex-wrap gap-3 z-10 font-mono text-xs">
           
-          {/* Add / Change Video Button */}
+          {/* Add / Upload Video Feed */}
           <Button
+            size="sm"
             onClick={() => openVideoModal('BOP-01')}
-            className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-900/30"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-950/40 border border-cyan-400/30 transition-colors h-8 px-3 rounded-lg"
           >
             <Video size={14} /> Add / Upload Video Feed
           </Button>
 
-          {/* Quick Toggle Overlays */}
-          <div className="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
-            <button
-              onClick={handleToggleGlobalAi}
-              className={`px-2.5 py-1 text-xs font-semibold rounded flex items-center gap-1 transition-all ${
-                globalAi ? 'bg-cyan-500 text-black shadow' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Toggle AI Bounding Box Overlays"
-            >
-              <Eye size={13} /> AI HUD
-            </button>
-            <button
-              onClick={handleToggleGlobalZones}
-              className={`px-2.5 py-1 text-xs font-semibold rounded flex items-center gap-1 transition-all ${
-                globalZones ? 'bg-red-500 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Toggle Virtual Perimeter Fences"
-            >
-              <Shield size={13} /> Fences
-            </button>
-          </div>
+          {/* AI HUD Toggle */}
+          <button
+            onClick={handleToggleGlobalAi}
+            className={`h-8 px-3 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all border ${
+              globalAi 
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold shadow-sm' 
+                : 'bg-[#070B12] text-slate-400 border-[#1E293B] hover:text-white'
+            }`}
+            title="Toggle AI Bounding Box Overlays"
+          >
+            <Eye size={13} /> AI HUD
+          </button>
+
+          {/* Fences Toggle (Solid Red Button Match) */}
+          <button
+            onClick={handleToggleGlobalZones}
+            className={`h-8 px-3 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-lg ${
+              globalZones 
+                ? 'bg-red-600 hover:bg-red-500 text-white border border-red-400/40 shadow-red-950/50' 
+                : 'bg-[#070B12] text-slate-400 border-[#1E293B] hover:text-white'
+            }`}
+            title="Toggle Virtual Perimeter Fences"
+          >
+            <Shield size={13} /> Fences
+          </button>
 
           {/* Grid Layout Switcher */}
-          <div className="flex items-center space-x-1 bg-slate-800 rounded-lg p-1 border border-slate-700">
+          <div className="flex items-center space-x-1 bg-[#070B12] rounded-lg p-1 border border-[#1E293B] h-8">
             <button 
               onClick={() => setGridSize(1)} 
-              className={`p-1.5 rounded transition-colors ${gridSize === 1 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1 rounded transition-colors ${gridSize === 1 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
               title="1-Camera Focus"
             >
-              <Monitor className="w-4 h-4" />
+              <Monitor className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setGridSize(4)} 
-              className={`p-1.5 rounded transition-colors ${gridSize === 4 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1 rounded transition-colors ${gridSize === 4 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
               title="2x2 Grid View"
             >
-              <Grid className="w-4 h-4" />
+              <Grid className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setGridSize(9)} 
-              className={`p-1.5 rounded transition-colors ${gridSize === 9 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1 rounded transition-colors ${gridSize === 9 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
               title="3x3 Grid View"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className="w-3.5 h-3.5" />
             </button>
           </div>
           
           {/* Sector Zone Filter */}
-          <div className="flex items-center space-x-2 bg-slate-800 rounded-lg px-2.5 py-1 border border-slate-700 text-xs">
+          <div className="flex items-center space-x-2 bg-[#070B12] rounded-lg px-2.5 h-8 border border-[#1E293B] text-xs">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
             <select 
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-mono"
               value={filterZone}
               onChange={(e) => setFilterZone(e.target.value)}
             >
-              <option value="all" className="bg-slate-900">All Sectors</option>
-              <option value="red" className="bg-slate-900">Red Zone (Restricted)</option>
-              <option value="yellow" className="bg-slate-900">Yellow Zone (Highway)</option>
-              <option value="green" className="bg-slate-900">Green Zone (Base HQ)</option>
+              <option value="all" className="bg-[#0A0F18]">All Sectors</option>
+              <option value="red" className="bg-[#0A0F18]">Red Zone (Restricted)</option>
+              <option value="yellow" className="bg-[#0A0F18]">Yellow Zone (Highway)</option>
+              <option value="green" className="bg-[#0A0F18]">Green Zone (Base HQ)</option>
             </select>
           </div>
 
         </div>
       </div>
 
-      {/* Camera Video Grid */}
-      <div className="flex-grow p-5 overflow-y-auto">
-        <div className={`grid gap-5 ${getGridClass()}`}>
+      {/* ── CAMERA VIDEO GRID ── */}
+      <div className="flex-grow">
+        <div className={`grid gap-4 ${getGridClass()}`}>
           {filteredCameras.slice(0, gridSize).map((cam) => (
             <CameraCard 
               key={cam.id}

@@ -1,365 +1,375 @@
 import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
 import { 
-  Settings, Cpu, Bell, Sliders, Globe, Save, AlertCircle, Eye, Moon, MonitorPlay
+  Settings, Cpu, Bell, Sliders, Globe, Save, AlertCircle, Eye, Moon, 
+  MonitorPlay, ShieldCheck, CheckCircle2, SlidersHorizontal, HardDrive,
+  Radio, Volume2, Key, Database, RefreshCw, Sparkles, Check
 } from 'lucide-react';
+import { ApiKeySection } from '../components/security/ApiKeySection';
 
 export const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'thresholds' | 'notifications' | 'environment' | 'apikeys'>('general');
   const [hasChanges, setHasChanges] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Form State
+  const [confidence, setConfidence] = useState(70);
+  const [loiteringSec, setLoiteringSec] = useState(30);
+  const [crowdLimit, setCrowdLimit] = useState(6);
+  const [frameSkip, setFrameSkip] = useState(2);
+  const [selectedCodec, setSelectedCodec] = useState('h264');
+  const [activeModel, setActiveModel] = useState('yolo8');
 
   const tabs = [
     { id: 'general', label: 'General', icon: <Settings className="w-4 h-4 mr-2" /> },
     { id: 'ai', label: 'AI Configuration', icon: <Cpu className="w-4 h-4 mr-2" /> },
-    { id: 'thresholds', label: 'Thresholds', icon: <Sliders className="w-4 h-4 mr-2" /> },
+    { id: 'thresholds', label: 'Thresholds', icon: <SlidersHorizontal className="w-4 h-4 mr-2" /> },
+    { id: 'apikeys', label: 'API Keys & Integrations', icon: <Key className="w-4 h-4 mr-2 text-cyan-400" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4 mr-2" /> },
     { id: 'environment', label: 'Environment', icon: <Globe className="w-4 h-4 mr-2" /> },
   ];
 
-  const handleToggle = (e: any) => {
-    setHasChanges(true);
+  const handleSave = () => {
+    setHasChanges(false);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handleChange = (e: any) => {
+  const markDirty = () => {
     setHasChanges(true);
+    setSavedSuccess(false);
   };
 
   return (
-    <div className="p-6 space-y-6 h-full overflow-y-auto bg-slate-950 text-slate-200">
+    <div className="p-4 md:p-6 space-y-5 h-full overflow-y-auto bg-[#070B12] text-slate-200">
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">System Settings</h1>
-          <p className="text-slate-400 text-sm">Configure platform behavior and AI parameters</p>
+      {/* Top Header Card */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0A0F18]/90 border border-slate-800/80 p-4 rounded-xl shadow-lg backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <Settings className="w-5 h-5 text-cyan-400" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
+              System Settings & Architecture Tuning
+            </h1>
+            <p className="text-slate-400 text-xs">Configure platform behavior, AI inference pipeline, and operational thresholds</p>
+          </div>
         </div>
         
-        <Button 
-          disabled={!hasChanges}
-          className={`${hasChanges ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
-          onClick={() => setHasChanges(false)}
-        >
-          <Save className="w-4 h-4 mr-2" /> Save Changes
-        </Button>
-      </div>
+        <div className="flex items-center gap-3">
+          {savedSuccess && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono">
+              <Check size={14} /> CONFIG APPLIED
+            </div>
+          )}
 
-      <div className="border-b border-slate-800">
-        <div className="flex space-x-1 overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                activeTab === tab.id 
-                  ? 'border-blue-500 text-blue-400' 
-                  : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+          <button 
+            disabled={!hasChanges}
+            onClick={handleSave}
+            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md ${
+              hasChanges 
+                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/25 cursor-pointer' 
+                : 'bg-slate-800/60 text-slate-500 border border-slate-700/50 cursor-not-allowed'
+            }`}
+          >
+            <Save className="w-4 h-4" /> Save Changes
+          </button>
         </div>
       </div>
 
-      <div className="max-w-4xl">
+      {/* Tabs Switcher */}
+      <div className="flex gap-2 border-b border-slate-800/80 pb-1 overflow-x-auto">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-t-lg transition-all border-b-2 whitespace-nowrap ${
+              activeTab === tab.id 
+                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5' 
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Settings Card */}
+      <div className="max-w-5xl">
+        
+        {/* General Settings */}
         {activeTab === 'general' && (
-          <Card className="bg-slate-900 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-slate-200">General Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">System Name</label>
-                  <input 
-                    type="text" 
-                    defaultValue="IBVAP - Intelligent Border Video Analytics Platform" 
-                    onChange={handleChange}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Theme Preference</label>
-                  <select 
-                    defaultValue="dark"
-                    onChange={handleChange}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                  >
-                    <option value="dark">Command Center Dark (Default)</option>
-                    <option value="light">High Contrast Light</option>
-                    <option value="system">System Default</option>
-                  </select>
-                </div>
+          <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-6">
+            <div className="border-b border-slate-800/70 pb-3 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Settings className="w-4 h-4 text-cyan-400" /> Platform Identity & Preferences
+              </h2>
+              <span className="text-[11px] font-mono text-slate-400">Deployment ID: IBVAP-BORDER-SEC04</span>
+            </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Language</label>
-                  <select 
-                    defaultValue="en"
-                    onChange={handleChange}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200"
-                  >
-                    <option value="en">English</option>
-                    <option value="hi">Hindi</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Timezone</label>
-                  <select 
-                    defaultValue="ist"
-                    onChange={handleChange}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200"
-                  >
-                    <option value="ist">Asia/Kolkata (IST)</option>
-                    <option value="utc">UTC</option>
-                  </select>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300">System Name</label>
+                <input 
+                  type="text" 
+                  defaultValue="IBVAP - Intelligent Border Video Analytics Platform" 
+                  onChange={markDirty}
+                  className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-sans"
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
+              
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300">Display Theme</label>
+                <select 
+                  defaultValue="dark"
+                  onChange={markDirty}
+                  className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-sans"
+                >
+                  <option value="dark">Military Command Center Dark (Default)</option>
+                  <option value="contrast">High Contrast Tactical Night Mode</option>
+                  <option value="infra">Infrared Thermal Palette</option>
+                </select>
+              </div>
 
-        {activeTab === 'ai' && (
-          <div className="space-y-6">
-            <Card className="bg-slate-900 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-slate-200">AI Module Configuration</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { name: 'Face Detection', desc: 'Detect and extract facial features from video streams', defaultChecked: true },
-                  { name: 'ANPR (License Plate)', desc: 'Automatic number plate recognition', defaultChecked: true },
-                  { name: 'Night Mode Auto-Detection', desc: 'Automatically switch models based on lighting', defaultChecked: true },
-                ].map((mod, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded border border-slate-800">
-                    <div>
-                      <h4 className="font-medium text-sm text-slate-200">{mod.name}</h4>
-                      <p className="text-xs text-slate-400">{mod.desc}</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked={mod.defaultChecked} onChange={handleToggle} />
-                      <div className="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-                ))}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300">Language</label>
+                <select 
+                  defaultValue="en"
+                  onChange={markDirty}
+                  className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="en">English (Official Military)</option>
+                  <option value="hi">Hindi (हिन्दी)</option>
+                </select>
+              </div>
 
-                <div className="flex items-center justify-between p-3 bg-amber-500/10 rounded border border-amber-500/20 mt-4">
-                  <div className="flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-sm text-amber-500">Authorized Personnel Identification</h4>
-                      <p className="text-xs text-amber-400/80">Cross-reference faces with authorized personnel database. High privacy impact.</p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" onChange={handleToggle} />
-                    <div className="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
-                  </label>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300">Timezone Synchronization</label>
+                <select 
+                  defaultValue="ist"
+                  onChange={markDirty}
+                  className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="ist">Asia/Kolkata (IST - UTC+05:30)</option>
+                  <option value="utc">UTC (Universal Military Time)</option>
+                </select>
+              </div>
 
-            <Card className="bg-slate-900 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-slate-200">Model Selection & Abstraction</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2 max-w-md">
-                  <label className="text-sm font-medium text-slate-300 flex justify-between">
-                    <span>Base Detection Model</span>
-                  </label>
-                  <select 
-                    defaultValue="mock"
-                    onChange={handleChange}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200"
-                  >
-                    <option value="mock">MockDetector (Simulation)</option>
-                    <option value="yolo8">YOLOv8 (TensorRT)</option>
-                    <option value="custom">Custom Thermal Model</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300">Video Hardware Decoder</label>
+                <select 
+                  value={selectedCodec}
+                  onChange={(e) => { setSelectedCodec(e.target.value); markDirty(); }}
+                  className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="h264">NVIDIA NVDEC H.264 / AVC (Low Latency)</option>
+                  <option value="hevc">NVIDIA NVDEC H.265 / HEVC (Ultra HD)</option>
+                  <option value="cpu">Software FFmpeg Fallback</option>
+                </select>
+              </div>
 
-                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs text-slate-400">
-                  <div className="text-emerald-400 mb-2">/* Active Pipeline Interfaces */</div>
-                  <div className="grid grid-cols-[200px_auto] gap-2">
-                    <span className="text-blue-400">IDetector</span><span>→ MockDetector</span>
-                    <span className="text-blue-400">ITracker</span><span>→ MockTracker</span>
-                    <span className="text-blue-400">IOCR</span><span>→ MockOCR</span>
-                    <span className="text-blue-400">IFaceDetector</span><span>→ MockFace</span>
-                    <span className="text-blue-400">IBehaviorAnalyzer</span><span>→ MockBehavior</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300">Stream Buffer Depth</label>
+                <select 
+                  defaultValue="low"
+                  onChange={markDirty}
+                  className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="zero">Zero Latency (Immediate Frame Drop)</option>
+                  <option value="low">Low Latency (300ms jitter buffer)</option>
+                  <option value="standard">Standard (1.0s smoothing)</option>
+                </select>
+              </div>
+            </div>
           </div>
         )}
 
-        {activeTab === 'thresholds' && (
-          <Card className="bg-slate-900 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-slate-200">Analytics Thresholds</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4 col-span-1 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-300">Global AI Confidence Threshold</label>
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="range" 
-                      min="0" max="100" defaultValue="70" 
-                      onChange={handleChange}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-blue-400 font-mono font-bold min-w-[3rem]">70%</span>
-                  </div>
-                  <p className="text-xs text-slate-500">Detections below this confidence level will be discarded to reduce false positives.</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Loitering Duration (Seconds)</label>
-                  <input type="number" defaultValue="30" onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200" />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Alert Deduplication Window (Sec)</label>
-                  <input type="number" defaultValue="15" onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Tracking Persistence (Frames)</label>
-                  <input type="number" defaultValue="60" onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200" />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">High Speed Alert Threshold (km/h)</label>
-                  <input type="number" defaultValue="80" onChange={handleChange} className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200" />
-                </div>
+        {/* AI Configuration */}
+        {activeTab === 'ai' && (
+          <div className="space-y-5">
+            <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-4">
+              <div className="border-b border-slate-800/70 pb-3 flex items-center justify-between">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-cyan-400" /> Active AI Perception Modules
+                </h2>
+                <span className="text-[11px] font-mono text-emerald-400">TensorRT 8.6 // FP16 Accelerated</span>
               </div>
 
-              <div className="pt-4 border-t border-slate-800">
-                <h3 className="text-sm font-medium text-slate-200 mb-4">Risk Score Severity Thresholds</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <span className="w-24 text-sm font-medium text-red-500">Critical</span>
-                    <input type="number" defaultValue="80" className="w-20 bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-sm text-center text-slate-200" onChange={handleChange} />
-                    <span className="text-sm text-slate-400">to 100</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="w-24 text-sm font-medium text-amber-500">High</span>
-                    <input type="number" defaultValue="60" className="w-20 bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-sm text-center text-slate-200" onChange={handleChange} />
-                    <span className="text-sm text-slate-400">to 79</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="w-24 text-sm font-medium text-blue-500">Medium</span>
-                    <input type="number" defaultValue="30" className="w-20 bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-sm text-center text-slate-200" onChange={handleChange} />
-                    <span className="text-sm text-slate-400">to 59</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === 'notifications' && (
-          <Card className="bg-slate-900 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-slate-200">Alert Routing & Notifications</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="space-y-3">
                 {[
-                  { name: 'Email', defaultChecked: true },
-                  { name: 'SMS', defaultChecked: false },
-                  { name: 'Push (Browser)', defaultChecked: true },
-                ].map((method, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded border border-slate-800">
-                    <span className="font-medium text-sm text-slate-200">{method.name}</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked={method.defaultChecked} onChange={handleToggle} />
-                      <div className="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
-
-              <h3 className="text-sm font-medium text-slate-200 mb-2">Notification Categories</h3>
-              <div className="space-y-2">
-                {[
-                  { name: 'Critical Alerts', desc: 'Intrusions, SOS, Major Failures', color: 'text-red-500', checked: true },
-                  { name: 'High Alerts', desc: 'Loitering, Unauthorized Vehicles', color: 'text-amber-500', checked: true },
-                  { name: 'Medium Alerts', desc: 'Crowd Gathering, Night Detections', color: 'text-blue-500', checked: false },
-                  { name: 'Low Alerts', desc: 'Informational events, Normal activity', color: 'text-slate-400', checked: false },
-                  { name: 'System Alerts', desc: 'Camera offline, Edge node degraded', color: 'text-purple-400', checked: true },
-                ].map((cat, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded border border-slate-800">
+                  { name: 'RetinaFace Quality & Occlusion Engine', desc: 'Detect, align, and grade face quality from border checkpoints', defaultChecked: true },
+                  { name: 'PaddleOCR-v4 + STN Rectification', desc: 'High-speed automated license plate number extraction and character rectification', defaultChecked: true },
+                  { name: 'Low-Light Adaptive CLAHE Enhancer', desc: 'Real-time nighttime contrast normalization for dark mountain terrain feeds', defaultChecked: true },
+                  { name: 'ByteTrack Multi-Camera Re-ID Filter', desc: 'Persist target IDs across non-overlapping sectors using visual appearance embeddings', defaultChecked: true },
+                ].map((mod, i) => (
+                  <div key={i} className="flex items-center justify-between p-3.5 bg-[#080E18] rounded-xl border border-slate-800">
                     <div>
-                      <h4 className={`font-medium text-sm ${cat.color}`}>{cat.name}</h4>
-                      <p className="text-xs text-slate-400">{cat.desc}</p>
+                      <h4 className="font-bold text-xs text-white">{mod.name}</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{mod.desc}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked={cat.checked} onChange={handleToggle} />
-                      <div className="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                      <input type="checkbox" className="sr-only peer" defaultChecked={mod.defaultChecked} onChange={markDirty} />
+                      <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
                     </label>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-4">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Database className="w-4 h-4 text-amber-400" /> Model Engine Abstraction
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-300">Active Object Detection Backbone</label>
+                  <select 
+                    value={activeModel}
+                    onChange={(e) => { setActiveModel(e.target.value); markDirty(); }}
+                    className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="yolo8">YOLOv8x-Border (TensorRT INT8 / 48.2 FPS)</option>
+                    <option value="rtdetr">RT-DETR-X Transformer (High Occlusion Accuracy)</option>
+                    <option value="thermal">Flir-Thermal Specialist v2 (Long-Wave Infrared)</option>
+                    <option value="mock">Synthetic Engine (Local Simulation Mode)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-300">Edge Downsampling Frame Skip (N)</label>
+                  <select 
+                    value={frameSkip}
+                    onChange={(e) => { setFrameSkip(Number(e.target.value)); markDirty(); }}
+                    className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="1">Skip 0 (Process Every Frame - 30 FPS)</option>
+                    <option value="2">Skip 1 (Process Every 2nd Frame - 15 FPS)</option>
+                    <option value="3">Skip 2 (Process Every 3rd Frame - 10 FPS)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
-        {activeTab === 'environment' && (
-          <Card className="bg-slate-900 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-slate-200">Environment & Infrastructure</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              
-              <div className="bg-slate-950 p-4 rounded-lg border border-slate-800">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-medium text-slate-200 flex items-center gap-2">
-                    <Moon className="w-4 h-4 text-blue-400" /> Weather & Environment Auto-Detection
-                  </h3>
+        {/* Thresholds */}
+        {activeTab === 'thresholds' && (
+          <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-6">
+            <div className="border-b border-slate-800/70 pb-3 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-cyan-400" /> Detection & Incident Sensitivity
+              </h2>
+              <span className="text-[11px] font-mono text-slate-400">Strict Defense Rules Applied</span>
+            </div>
+
+            <div className="space-y-5 text-xs">
+              <div className="space-y-2 p-3.5 bg-[#080E18] rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white">Global AI Confidence Discard Threshold</span>
+                  <span className="font-mono text-cyan-400 font-bold text-sm">{confidence}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="30" max="95" 
+                  value={confidence}
+                  onChange={(e) => { setConfidence(Number(e.target.value)); markDirty(); }}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                />
+                <p className="text-[11px] text-slate-500">Detections scoring below this threshold are purged automatically before alert emission.</p>
+              </div>
+
+              <div className="space-y-2 p-3.5 bg-[#080E18] rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white">Loitering Dwell Trigger Duration</span>
+                  <span className="font-mono text-amber-400 font-bold text-sm">{loiteringSec} seconds</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="5" max="120" step="5"
+                  value={loiteringSec}
+                  onChange={(e) => { setLoiteringSec(Number(e.target.value)); markDirty(); }}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                />
+                <p className="text-[11px] text-slate-500">Triggers an orange warning if a human remains stationary in a yellow zone past this duration.</p>
+              </div>
+
+              <div className="space-y-2 p-3.5 bg-[#080E18] rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white">Restricted Zone Crowd Overcrowding Limit</span>
+                  <span className="font-mono text-red-400 font-bold text-sm">{crowdLimit} persons</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="2" max="25" 
+                  value={crowdLimit}
+                  onChange={(e) => { setCrowdLimit(Number(e.target.value)); markDirty(); }}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-400"
+                />
+                <p className="text-[11px] text-slate-500">Flags crowd density alerts if aggregate head count exceeds this limit inside fence polygons.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notifications */}
+        {activeTab === 'notifications' && (
+          <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-4">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Bell className="w-4 h-4 text-cyan-400" /> Alert Dispatch & Audio Channels
+            </h2>
+            <div className="space-y-3">
+              {[
+                { title: 'Auditory Siren on DEFCON Critical Threat', desc: 'Plays acoustic tactical alert on control room terminal speakers', defaultChecked: true },
+                { title: 'Command Center Push Notifications', desc: 'Browser desktop banner alerts for zone breaches and ANPR matches', defaultChecked: true },
+                { title: 'Automatic Incident Escalation to Quick Reaction Team', desc: 'Dispatches automated dispatch SMS/Radio packet to field patrol units', defaultChecked: true },
+                { title: 'Night Shift Reduced Chime Mode', desc: 'Mutes low-severity alerts between 22:00 and 06:00 IST', defaultChecked: false },
+              ].map((n, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3.5 bg-[#080E18] rounded-xl border border-slate-800">
+                  <div>
+                    <h4 className="font-bold text-xs text-white">{n.title}</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{n.desc}</p>
+                  </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked onChange={handleToggle} />
-                    <div className="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <input type="checkbox" className="sr-only peer" defaultChecked={n.defaultChecked} onChange={markDirty} />
+                    <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
                   </label>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-slate-900 p-3 rounded border border-slate-800 text-center">
-                    <span className="block text-xs text-slate-400 mb-1">Time of Day</span>
-                    <span className="font-medium text-blue-400">Night Mode</span>
-                  </div>
-                  <div className="bg-slate-900 p-3 rounded border border-slate-800 text-center">
-                    <span className="block text-xs text-slate-400 mb-1">Weather</span>
-                    <span className="font-medium text-slate-200">Clear</span>
-                  </div>
-                  <div className="bg-slate-900 p-3 rounded border border-slate-800 text-center">
-                    <span className="block text-xs text-slate-400 mb-1">Visibility</span>
-                    <span className="font-medium text-emerald-400">Good (&gt;10km)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-slate-200 mb-2">Environment Variables (Read-Only)</h3>
-                <div className="bg-slate-950 p-4 rounded border border-slate-800 font-mono text-xs space-y-2">
-                  <div className="flex"><span className="text-slate-500 w-32">NODE_ENV:</span><span className="text-emerald-400">development</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">API_URL:</span><span className="text-slate-300">http://localhost:8000/api</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">WS_URL:</span><span className="text-slate-300">ws://localhost:8000/ws</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">MOCK_SERVICES:</span><span className="text-blue-400">true</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">DB_HOST:</span><span className="text-slate-300">localhost</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">DB_PASSWORD:</span><span className="text-slate-500">********</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">JWT_SECRET:</span><span className="text-slate-500">********</span></div>
-                  <div className="flex"><span className="text-slate-500 w-32">EDGE_MODE:</span><span className="text-blue-400">true</span></div>
-                </div>
-              </div>
-
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* Environment */}
+        {activeTab === 'environment' && (
+          <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-4">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Globe className="w-4 h-4 text-cyan-400" /> Edge Gateway & Local Storage Limits
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 bg-[#080E18] border border-slate-800 rounded-xl space-y-2">
+                <div className="text-slate-400">Current Node Role</div>
+                <div className="text-base font-bold text-white font-mono">STANDALONE EDGE SURVEILLANCE GATEWAY</div>
+                <div className="text-[11px] text-emerald-400">● Local Cache Sync Active</div>
+              </div>
+
+              <div className="p-4 bg-[#080E18] border border-slate-800 rounded-xl space-y-2">
+                <div className="text-slate-400">Evidence Disk Quota</div>
+                <div className="text-base font-bold text-cyan-400 font-mono">1.2 TB / 4.0 TB (30% Used)</div>
+                <div className="text-[11px] text-slate-500">Auto-purges oldest non-critical events at 90%</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* API Keys & External Integrations */}
+        {activeTab === 'apikeys' && (
+          <ApiKeySection />
+        )}
+
       </div>
+
     </div>
   );
 };
+export default SettingsPage;

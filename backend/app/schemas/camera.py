@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, Any
 from datetime import datetime
 
@@ -29,8 +29,7 @@ class CameraResponse(CameraBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CameraHealthResponse(BaseModel):
     id: int
@@ -44,5 +43,4 @@ class CameraHealthResponse(BaseModel):
     issues: Optional[Any] = None
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

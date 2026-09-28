@@ -76,10 +76,12 @@ async def update_zone(id: str, updates: Dict[str, Any] = Body(...)):
     zones = _load_zones()
     for z in zones:
         if z.get("id") == id:
-            if "config" in updates:
+            if not isinstance(z.get("config"), dict):
+                z["config"] = {}
+            if "config" in updates and isinstance(updates["config"], dict):
                 z["config"].update(updates["config"])
             else:
-                z.get("config", {}).update(updates)
+                z["config"].update(updates)
             z["updated_at"] = int(time.time())
             _save_zones(zones)
             return {"status": "success", "message": "Zone updated", "data": z}
@@ -103,7 +105,9 @@ async def toggle_zone(id: str):
     zones = _load_zones()
     for z in zones:
         if z.get("id") == id:
-            cfg = z.get("config", {})
+            if not isinstance(z.get("config"), dict):
+                z["config"] = {}
+            cfg = z["config"]
             cfg["enabled"] = not cfg.get("enabled", True)
             z["updated_at"] = int(time.time())
             _save_zones(zones)

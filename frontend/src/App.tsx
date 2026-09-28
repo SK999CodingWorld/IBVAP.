@@ -52,9 +52,12 @@ function App() {
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/incidents" element={<IncidentsPage />} />
           <Route path="/tracking" element={<PeopleObjects />} />
+          <Route path="/people" element={<PeopleObjects />} />
           <Route path="/tracking/cross-camera" element={<MultiCameraTracking />} />
+          <Route path="/cross-camera-tracking" element={<MultiCameraTracking />} />
           <Route path="/anpr" element={<ANPRPage />} />
           <Route path="/virtual-fences" element={<VirtualFences />} />
+          <Route path="/fences" element={<VirtualFences />} />
           <Route path="/map" element={<MapIntelligence />} />
           <Route path="/evidence" element={<EvidenceVault />} />
           <Route path="/video-analyzer" element={<VideoAnalyzer />} />
@@ -64,11 +67,14 @@ function App() {
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/system-health" element={<SystemHealth />} />
           <Route path="/security" element={<SecurityCenter />} />
+          <Route path="/api-keys" element={<SecurityCenter initialTab="api-keys" />} />
+          <Route path="/api-key" element={<SecurityCenter initialTab="api-keys" />} />
+          <Route path="/integrations" element={<SecurityCenter initialTab="integrations" />} />
           <Route path="/audit-log" element={<AuditLog />} />
+          <Route path="/audit" element={<AuditLog />} />
           <Route path="/users" element={<UsersRoles />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/demo" element={<Navigate to="/command-center" replace />} />
-          <Route path="/presentation" element={<Navigate to="/command-center" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/command-center" replace />} />

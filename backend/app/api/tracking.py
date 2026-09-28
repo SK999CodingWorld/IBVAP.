@@ -30,5 +30,5 @@ async def get_track(tracking_id: str):
 async def get_track_path(tracking_id: str):
     """Returns the multi-camera journey path for a subject"""
     transitions = reid_engine.get_transitions(global_id=tracking_id, limit=50)
-    cams = [t["camera_id"] for t in transitions]
+    cams = [t.get("camera_id") for t in transitions if t.get("camera_id")]
     return {"status": "success", "global_id": tracking_id, "cameras_visited": list(dict.fromkeys(cams))}

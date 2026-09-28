@@ -1,12 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
-
-# Mock dependencies
-async def get_current_user():
-    return {"id": 1, "username": "admin"}
 
 @router.get("")
 async def list_alerts(
@@ -16,9 +13,10 @@ async def list_alerts(
     type: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
-    current_user: dict = Depends(get_current_user)
+    current_user: Any = Depends(get_current_user)
 ):
     # Mock data
+    now_iso = datetime.now(timezone.utc).isoformat()
     return [
         {
             "id": "ALT-0001",
@@ -27,7 +25,7 @@ async def list_alerts(
             "tracking_id": "TRK-001",
             "risk_score": 87,
             "severity": "CRITICAL",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": now_iso,
             "status": "NEW",
             "type": "Zone Intrusion"
         },
@@ -38,14 +36,27 @@ async def list_alerts(
             "tracking_id": "TRK-002",
             "risk_score": 45,
             "severity": "MEDIUM",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": now_iso,
             "status": "ACKNOWLEDGED",
             "type": "High Speed"
         }
     ]
 
+@router.get("/stats/summary")
+async def get_alert_stats(current_user: Any = Depends(get_current_user)):
+    return {
+        "total": 120,
+        "critical": 5,
+        "high": 15,
+        "medium": 40,
+        "low": 60,
+        "open": 25,
+        "resolved": 95
+    }
+
 @router.get("/{alert_id}")
-async def get_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+async def get_alert(alert_id: str, current_user: Any = Depends(get_current_user)):
+    now_iso = datetime.now(timezone.utc).isoformat()
     return {
         "id": alert_id,
         "camera_id": "CAM-01",
@@ -53,7 +64,7 @@ async def get_alert(alert_id: str, current_user: dict = Depends(get_current_user
         "tracking_id": "TRK-001",
         "risk_score": 87,
         "severity": "CRITICAL",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": now_iso,
         "status": "NEW",
         "type": "Zone Intrusion",
         "factors": [
@@ -66,33 +77,21 @@ async def get_alert(alert_id: str, current_user: dict = Depends(get_current_user
     }
 
 @router.post("/{alert_id}/acknowledge")
-async def acknowledge_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+async def acknowledge_alert(alert_id: str, current_user: Any = Depends(get_current_user)):
     return {"id": alert_id, "status": "ACKNOWLEDGED"}
 
 @router.post("/{alert_id}/escalate")
-async def escalate_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+async def escalate_alert(alert_id: str, current_user: Any = Depends(get_current_user)):
     return {"id": alert_id, "status": "ESCALATED"}
 
 @router.post("/{alert_id}/resolve")
-async def resolve_alert(alert_id: str, resolution: Dict[str, str], current_user: dict = Depends(get_current_user)):
+async def resolve_alert(alert_id: str, resolution: Dict[str, str], current_user: Any = Depends(get_current_user)):
     return {"id": alert_id, "status": "RESOLVED", "resolution": resolution.get("note", "")}
 
 @router.post("/{alert_id}/false-positive")
-async def mark_false_positive(alert_id: str, current_user: dict = Depends(get_current_user)):
+async def mark_false_positive(alert_id: str, current_user: Any = Depends(get_current_user)):
     return {"id": alert_id, "status": "FALSE_POSITIVE"}
 
-@router.get("/stats/summary")
-async def get_alert_stats(current_user: dict = Depends(get_current_user)):
-    return {
-        "total": 120,
-        "critical": 5,
-        "high": 15,
-        "medium": 40,
-        "low": 60,
-        "open": 25,
-        "resolved": 95
-    }
-
 @router.post("/{alert_id}/incident")
-async def create_incident_from_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
+async def create_incident_from_alert(alert_id: str, current_user: Any = Depends(get_current_user)):
     return {"incident_id": "INC-0001", "alert_id": alert_id, "status": "Created"}

@@ -212,4 +212,21 @@ class EvidenceVaultManager:
                 "status": "SECURED_IMMUTABLE"
             }
 
+    def update_case_status(self, case_id: str, new_status: str) -> Optional[Dict[str, Any]]:
+        """Updates the status of an evidence case (e.g. RESOLVED, CLOSED, IN_REVIEW)"""
+        with self.lock:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE evidence_cases SET status = ? WHERE id = ? OR case_number = ?",
+                (new_status, case_id, case_id)
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM evidence_cases WHERE id = ? OR case_number = ? LIMIT 1", (case_id, case_id))
+            row = cursor.fetchone()
+            conn.close()
+            return dict(row) if row else None
+
 evidence_vault = EvidenceVaultManager()
+

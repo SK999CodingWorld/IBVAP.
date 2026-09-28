@@ -107,3 +107,123 @@ async def get_analytics_overview(current_user=Depends(get_current_user)):
         "system_health": "good",
         "recent_trend": "increasing"
     }
+
+@router.get("/heatmap")
+async def get_heatmap_analytics():
+    """Returns geospatial activity density clusters, sector hot spots, and 24h timeline"""
+    return {
+        "status": "success",
+        "timestamp": datetime.utcnow().isoformat(),
+        "summary": {
+            "total_human_detections": 12584,
+            "total_vehicle_detections": 3972,
+            "night_movements": 2318,
+            "intrusion_hotspots": 14,
+            "peak_hour": "21:00",
+            "active_sectors": 5
+        },
+        "sectors": [
+            {
+                "id": "SEC-04-A",
+                "name": "Sector 4 (Red Zone Alpha)",
+                "lat": 27.0582,
+                "lng": 88.4521,
+                "radius": 450,
+                "humanActivity": 92,
+                "vehicleActivity": 25,
+                "alertScore": 88,
+                "intrusions": 14,
+                "nightMovement": 76,
+                "risk": "CRITICAL",
+                "primaryCamera": "CAM-01",
+                "cameraName": "BOP Sector 4 North PTZ",
+                "cameraFeed": "/feed-bop01.jpg",
+                "status": "High Alert - Active Intrusion Risk"
+            },
+            {
+                "id": "SEC-04-B",
+                "name": "Sector 4 (Buffer Zone West)",
+                "lat": 27.0641,
+                "lng": 88.4385,
+                "radius": 380,
+                "humanActivity": 54,
+                "vehicleActivity": 12,
+                "alertScore": 62,
+                "intrusions": 6,
+                "nightMovement": 48,
+                "risk": "HIGH",
+                "primaryCamera": "BOP-03",
+                "cameraName": "Perimeter West Optical",
+                "cameraFeed": "/thumb-cam-bop01.jpg",
+                "status": "Active Patrol Monitoring"
+            },
+            {
+                "id": "HWY-01",
+                "name": "Highway 1 Checkpoint Alpha",
+                "lat": 27.0425,
+                "lng": 88.4720,
+                "radius": 500,
+                "humanActivity": 38,
+                "vehicleActivity": 96,
+                "alertScore": 45,
+                "intrusions": 2,
+                "nightMovement": 35,
+                "risk": "MEDIUM",
+                "primaryCamera": "CHECK-01",
+                "cameraName": "Checkpoint Highway ANPR Lane",
+                "cameraFeed": "/feed-road01.jpg",
+                "status": "Vehicle Convoy Screening"
+            },
+            {
+                "id": "SEC-02-N",
+                "name": "Sector 2 Approach North",
+                "lat": 27.0754,
+                "lng": 88.4608,
+                "radius": 320,
+                "humanActivity": 22,
+                "vehicleActivity": 84,
+                "alertScore": 30,
+                "intrusions": 0,
+                "nightMovement": 20,
+                "risk": "LOW",
+                "primaryCamera": "ROAD-02",
+                "cameraName": "Approach Road North",
+                "cameraFeed": "/health-cam-road02.jpg",
+                "status": "Nominal Logistics Transit"
+            },
+            {
+                "id": "HQ-MAIN",
+                "name": "HQ Base Camp Perimeter",
+                "lat": 27.0380,
+                "lng": 88.4355,
+                "radius": 420,
+                "humanActivity": 70,
+                "vehicleActivity": 58,
+                "alertScore": 18,
+                "intrusions": 0,
+                "nightMovement": 15,
+                "risk": "LOW",
+                "primaryCamera": "GATE-01",
+                "cameraName": "HQ Main Access Gate",
+                "cameraFeed": "/thumb-cam-bop02.jpg",
+                "status": "Authorized Personnel Gate"
+            }
+        ],
+        "timeline_24h": [
+            {"hour": "00:00", "human": 45, "vehicle": 12, "intrusions": 1, "night": 52},
+            {"hour": "02:00", "human": 30, "vehicle": 8, "intrusions": 2, "night": 38},
+            {"hour": "04:00", "human": 55, "vehicle": 15, "intrusions": 3, "night": 65},
+            {"hour": "06:00", "human": 110, "vehicle": 45, "intrusions": 1, "night": 20},
+            {"hour": "08:00", "human": 180, "vehicle": 95, "intrusions": 0, "night": 5},
+            {"hour": "10:00", "human": 240, "vehicle": 140, "intrusions": 0, "night": 0},
+            {"hour": "12:00", "human": 260, "vehicle": 155, "intrusions": 0, "night": 0},
+            {"hour": "14:00", "human": 220, "vehicle": 130, "intrusions": 1, "night": 0},
+            {"hour": "16:00", "human": 250, "vehicle": 145, "intrusions": 0, "night": 0},
+            {"hour": "18:00", "human": 310, "vehicle": 120, "intrusions": 2, "night": 45},
+            {"hour": "20:00", "human": 380, "vehicle": 85, "intrusions": 4, "night": 90},
+            {"hour": "21:00", "human": 420, "vehicle": 70, "intrusions": 5, "night": 110},
+            {"hour": "22:00", "human": 290, "vehicle": 40, "intrusions": 3, "night": 85},
+            {"hour": "23:00", "human": 160, "vehicle": 25, "intrusions": 2, "night": 60}
+        ]
+    }
+

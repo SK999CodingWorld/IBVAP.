@@ -20,10 +20,9 @@ def main():
         sys.path.insert(0, str(root_dir))
         
     os.environ.setdefault("PYTHONPATH", f"{backend_dir};{root_dir}")
-    os.environ.setdefault("PORT", "8000")
-    os.environ.setdefault("DEMO_MODE", "true")
+    os.environ.setdefault("PORT", "8001")
     
-    port = int(os.environ.get("PORT", "8000"))
+    port = int(os.environ.get("PORT", "8001"))
     host = os.environ.get("HOST", "0.0.0.0")
     
     print("=" * 70)

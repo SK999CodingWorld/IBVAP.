@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, Any
 from datetime import datetime
 
@@ -17,8 +17,7 @@ class DetectionResponse(BaseModel):
     zone: Optional[str]
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class TrackResponse(BaseModel):
     id: int
@@ -31,8 +30,7 @@ class TrackResponse(BaseModel):
     zone_transitions: Any
     status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ANPRReadResponse(BaseModel):
     id: int
@@ -44,5 +42,4 @@ class ANPRReadResponse(BaseModel):
     vehicle_image_path: Optional[str]
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,15 +1,23 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
-import { Search, Filter, Users, Car, Crosshair, ArrowRight, ArrowUpRight, ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft, ArrowUpLeft, ArrowUp } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { 
+  Search, Filter, Users, Car, Crosshair, ArrowRight, ArrowUpRight, 
+  ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft, ArrowUpLeft, 
+  ArrowUp, Shield, Activity, Target
+} from 'lucide-react';
 
-// Mock Data
-const MOCK_DETECTIONS = [
+interface DetectionItem {
+  id: string;
+  type: 'person' | 'vehicle' | 'animal';
+  camera: string;
+  direction: string;
+  speed: number;
+  zone: string;
+  confidence: number;
+  certainty: 'confirmed' | 'probable' | 'uncertain' | 'unknown';
+  time: string;
+}
+
+const MOCK_DETECTIONS: DetectionItem[] = [
   { id: 'P-097', type: 'person', camera: 'CAM-01', direction: 'N', speed: 1.2, zone: 'Entry Lobby', confidence: 95, certainty: 'confirmed', time: '10:42:15' },
   { id: 'P-098', type: 'person', camera: 'CAM-02', direction: 'NE', speed: 1.4, zone: 'Corridor A', confidence: 92, certainty: 'confirmed', time: '10:42:10' },
   { id: 'P-099', type: 'person', camera: 'CAM-01', direction: 'S', speed: 0.8, zone: 'Entry Lobby', confidence: 85, certainty: 'probable', time: '10:41:55' },
@@ -18,194 +26,305 @@ const MOCK_DETECTIONS = [
   { id: 'V-019', type: 'vehicle', camera: 'CAM-06', direction: 'W', speed: 12.0, zone: 'Parking A', confidence: 96, certainty: 'confirmed', time: '10:40:45' },
   { id: 'P-101', type: 'person', camera: 'CAM-02', direction: 'NW', speed: 1.3, zone: 'Corridor A', confidence: 90, certainty: 'confirmed', time: '10:40:15' },
   { id: 'V-020', type: 'vehicle', camera: 'CAM-05', direction: 'E', speed: 14.2, zone: 'Main Gate', confidence: 94, certainty: 'confirmed', time: '10:39:50' },
-  { id: 'P-102', type: 'person', camera: 'CAM-04', direction: 'S', speed: 0.0, zone: 'Server Room', confidence: 60, certainty: 'unknown', time: '10:39:10' },
+  { id: 'P-102', type: 'person', camera: 'CAM-04', direction: 'S', speed: 0.0, zone: 'Server Room', confidence: 60, certainty: 'uncertain', time: '10:39:10' },
   { id: 'P-103', type: 'person', camera: 'CAM-01', direction: 'N', speed: 1.5, zone: 'Entry Lobby', confidence: 91, certainty: 'confirmed', time: '10:38:44' },
-  { id: 'V-021', type: 'vehicle', camera: 'CAM-06', direction: 'E', speed: 10.5, zone: 'Parking B', confidence: 88, certainty: 'probable', time: '10:38:20' },
-  { id: 'P-104', type: 'person', camera: 'CAM-03', direction: 'E', speed: 1.2, zone: 'Cafeteria', confidence: 97, certainty: 'confirmed', time: '10:37:55' },
-  { id: 'P-105', type: 'person', camera: 'CAM-02', direction: 'SE', speed: 1.0, zone: 'Corridor B', confidence: 82, certainty: 'probable', time: '10:37:15' },
-  { id: 'V-022', type: 'vehicle', camera: 'CAM-05', direction: 'W', speed: 16.0, zone: 'Main Gate', confidence: 99, certainty: 'confirmed', time: '10:36:40' },
-  { id: 'P-106', type: 'person', camera: 'CAM-04', direction: 'N', speed: 1.4, zone: 'Server Room', confidence: 89, certainty: 'confirmed', time: '10:36:10' },
 ];
 
 const getDirectionIcon = (dir: string) => {
   switch (dir) {
-    case 'N': return <ArrowUp className="w-4 h-4" />;
-    case 'NE': return <ArrowUpRight className="w-4 h-4" />;
-    case 'E': return <ArrowRight className="w-4 h-4" />;
-    case 'SE': return <ArrowDownRight className="w-4 h-4" />;
-    case 'S': return <ArrowDown className="w-4 h-4" />;
-    case 'SW': return <ArrowDownLeft className="w-4 h-4" />;
-    case 'W': return <ArrowLeft className="w-4 h-4" />;
-    case 'NW': return <ArrowUpLeft className="w-4 h-4" />;
-    default: return <ArrowUp className="w-4 h-4" />;
+    case 'N': return <ArrowUp className="w-3.5 h-3.5 text-slate-300" />;
+    case 'NE': return <ArrowUpRight className="w-3.5 h-3.5 text-slate-300" />;
+    case 'E': return <ArrowRight className="w-3.5 h-3.5 text-slate-300" />;
+    case 'SE': return <ArrowDownRight className="w-3.5 h-3.5 text-slate-300" />;
+    case 'S': return <ArrowDown className="w-3.5 h-3.5 text-slate-300" />;
+    case 'SW': return <ArrowDownLeft className="w-3.5 h-3.5 text-slate-300" />;
+    case 'W': return <ArrowLeft className="w-3.5 h-3.5 text-slate-300" />;
+    case 'NW': return <ArrowUpLeft className="w-3.5 h-3.5 text-slate-300" />;
+    default: return <ArrowUp className="w-3.5 h-3.5 text-slate-300" />;
   }
 };
 
-const getCertaintyColor = (certainty: string) => {
-  switch (certainty) {
-    case 'confirmed': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-    case 'probable': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-    case 'uncertain': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-    case 'unknown': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
-    default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
-  }
-};
-
-export const PeopleObjects = () => {
+export const PeopleObjects: React.FC = () => {
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredDetections = MOCK_DETECTIONS.filter(d => {
+  const filtered = MOCK_DETECTIONS.filter(d => {
     if (filterType !== 'all' && d.type !== filterType) return false;
-    if (searchTerm && !d.id.toLowerCase().includes(searchTerm.toLowerCase()) && !d.camera.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (searchTerm && !d.id.toLowerCase().includes(searchTerm.toLowerCase()) && !d.camera.toLowerCase().includes(searchTerm.toLowerCase()) && !d.zone.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     return true;
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Subject Tracking</h1>
-          <p className="text-slate-400">Real-time object detection and classification</p>
+    <div className="h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
+      
+      {/* ── TOP OPERATIONAL HEADER BAR WITH HELICOPTER & SCOPE ART ── */}
+      <div 
+        className="p-4 bg-[#0A0F18] border border-[#1B2536] rounded-xl flex flex-wrap gap-4 justify-between items-center relative overflow-hidden shadow-xl"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 45%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/track-header-bg.jpg')`,
+          backgroundPosition: 'right center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'contain'
+        }}
+      >
+        <div className="flex items-center space-x-3 z-10">
+          <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-lg shadow-cyan-950/40">
+            <Target className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 font-mono">
+              Subject Tracking
+            </h1>
+            <p className="text-[11px] text-slate-400 font-mono">
+              Real-time object detection and classification
+            </p>
+          </div>
         </div>
-        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono">
-          LIVE ACTIVE
-        </Badge>
+
+        <div className="z-10 font-mono text-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-950/40">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            LIVE ACTIVE
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Total People</CardTitle>
-            <Users className="w-4 h-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">245</div>
-            <p className="text-xs text-slate-500">Active today</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Total Vehicles</CardTitle>
-            <Car className="w-4 h-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">82</div>
-            <p className="text-xs text-slate-500">Active today</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Active Tracks</CardTitle>
-            <Crosshair className="w-4 h-4 text-cyan-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">15</div>
-            <p className="text-xs text-slate-500">Currently in frame</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Avg Confidence</CardTitle>
-            <Users className="w-4 h-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">92.4%</div>
-            <p className="text-xs text-slate-500">System accuracy</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium text-white">Detection Feed</CardTitle>
-            <div className="flex space-x-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-                <Input
-                  placeholder="Search ID or Camera..."
-                  className="pl-9 w-[250px] bg-slate-950 border-slate-800"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+      {/* ── 4 KPI STATS CARDS MATCHING SCREENSHOT ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        {/* Total People */}
+        <div 
+          className="relative bg-[#0A0F18] border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-people.jpg')`,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover'
+          }}
+        >
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-inner">
+                <Users className="w-5 h-5" />
               </div>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[150px] bg-slate-950 border-slate-800">
-                  <Filter className="w-4 h-4 mr-2 text-slate-500" />
-                  <SelectValue placeholder="Filter type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="person">People</SelectItem>
-                  <SelectItem value="vehicle">Vehicles</SelectItem>
-                </SelectContent>
-              </Select>
+              <div>
+                <div className="text-xs text-slate-400 font-mono">Total People</div>
+                <div className="text-2xl font-bold text-white font-mono mt-0.5 leading-none">245</div>
+                <div className="text-[10px] text-slate-500 font-mono mt-1">Active today</div>
+              </div>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead>Tracking ID</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Camera</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Direction</TableHead>
-                <TableHead>Certainty</TableHead>
-                <TableHead>Confidence</TableHead>
-                <TableHead>Time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDetections.map((det) => (
-                <TableRow key={det.id} className="border-slate-800 hover:bg-slate-800/50 cursor-pointer">
-                  <TableCell className="font-medium text-white">{det.id}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {det.type === 'person' ? <Users className="w-4 h-4 text-blue-500" /> : <Car className="w-4 h-4 text-emerald-500" />}
-                      <span className="capitalize">{det.type}</span>
+        </div>
+
+        {/* Total Vehicles */}
+        <div 
+          className="relative bg-[#0A0F18] border border-emerald-500/30 hover:border-emerald-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-vehicles.jpg')`,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover'
+          }}
+        >
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-inner">
+                <Car className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400 font-mono">Total Vehicles</div>
+                <div className="text-2xl font-bold text-white font-mono mt-0.5 leading-none">82</div>
+                <div className="text-[10px] text-slate-500 font-mono mt-1">Active today</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Tracks */}
+        <div 
+          className="relative bg-[#0A0F18] border border-amber-500/30 hover:border-amber-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-active.jpg')`,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover'
+          }}
+        >
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-inner">
+                <Crosshair className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400 font-mono">Active Tracks</div>
+                <div className="text-2xl font-bold text-white font-mono mt-0.5 leading-none">15</div>
+                <div className="text-[10px] text-slate-500 font-mono mt-1">Currently in frame</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Avg Confidence */}
+        <div 
+          className="relative bg-[#0A0F18] border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-confidence.jpg')`,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover'
+          }}
+        >
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-inner">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400 font-mono">Avg Confidence</div>
+                <div className="text-2xl font-bold text-white font-mono mt-0.5 leading-none">92.4%</div>
+                <div className="text-[10px] text-slate-500 font-mono mt-1">System accuracy</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── DETECTION FEED CARD & TABLE ── */}
+      <div className="bg-[#0A0F18] border border-[#1B2536] rounded-xl overflow-hidden shadow-xl">
+        
+        {/* Table Toolbar */}
+        <div className="p-3.5 border-b border-[#1B2536] flex flex-wrap gap-3 justify-between items-center bg-[#070B12]/80">
+          <div className="flex items-center gap-2">
+            <Crosshair className="w-4 h-4 text-cyan-400" />
+            <h2 className="text-xs font-bold text-white uppercase font-mono tracking-wider">
+              Detection Feed
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2.5 font-mono text-xs">
+            {/* Search Input */}
+            <div className="relative w-60 sm:w-72">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search ID or Camera..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#0A0F18] border border-[#1E293B] rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500 text-slate-200"
+              />
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="flex items-center space-x-1.5 bg-[#0A0F18] rounded-lg px-2.5 py-1.5 border border-[#1E293B] text-xs">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <select 
+                className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="all" className="bg-[#0A0F18]">all</option>
+                <option value="person" className="bg-[#0A0F18]">People</option>
+                <option value="vehicle" className="bg-[#0A0F18]">Vehicles</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Detection Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-mono">
+            <thead className="bg-[#070B12] text-slate-400 uppercase text-[11px] border-b border-[#1B2536]">
+              <tr>
+                <th className="px-5 py-3 font-semibold">TRACKING ID</th>
+                <th className="px-4 py-3 font-semibold">TYPE</th>
+                <th className="px-4 py-3 font-semibold">CAMERA</th>
+                <th className="px-4 py-3 font-semibold">LOCATION</th>
+                <th className="px-4 py-3 font-semibold">DIRECTION</th>
+                <th className="px-4 py-3 font-semibold">CERTAINTY</th>
+                <th className="px-4 py-3 font-semibold">CONFIDENCE</th>
+                <th className="px-5 py-3 text-right font-semibold">TIME</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1B2536]">
+              {filtered.map((item, idx) => (
+                <tr key={idx} className="hover:bg-[#0E1624]/60 transition-colors group">
+                  
+                  {/* Tracking ID */}
+                  <td className="px-5 py-3">
+                    <span className="font-bold text-white group-hover:text-cyan-400 transition-colors">
+                      {item.id}
+                    </span>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-1.5">
+                      {item.type === 'person' ? (
+                        <Users className="w-3.5 h-3.5 text-cyan-400" />
+                      ) : (
+                        <Car className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                      <span className="capitalize text-slate-200">{item.type}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>{det.camera}</TableCell>
-                  <TableCell>{det.zone}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {getDirectionIcon(det.direction)}
-                      <span>{det.direction}</span>
+                  </td>
+
+                  {/* Camera */}
+                  <td className="px-4 py-3 text-slate-300">
+                    {item.camera}
+                  </td>
+
+                  {/* Location */}
+                  <td className="px-4 py-3 text-slate-400">
+                    {item.zone}
+                  </td>
+
+                  {/* Direction */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-1">
+                      {getDirectionIcon(item.direction)}
+                      <span className="text-slate-200">{item.direction}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getCertaintyColor(det.certainty)}>
-                      {det.certainty}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
+                  </td>
+
+                  {/* Certainty Badge */}
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize ${
+                      item.certainty === 'confirmed' ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40' :
+                      item.certainty === 'probable' ? 'bg-cyan-950/60 text-cyan-400 border-cyan-500/40' :
+                      'bg-amber-950/60 text-amber-400 border-amber-500/40'
+                    }`}>
+                      {item.certainty}
+                    </span>
+                  </td>
+
+                  {/* Confidence Bar */}
+                  <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
-                      <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="w-20 bg-[#070B12] rounded-full h-1.5 overflow-hidden border border-[#1E293B]">
                         <div 
-                          className={`h-full rounded-full ${det.confidence > 90 ? 'bg-emerald-500' : det.confidence > 80 ? 'bg-blue-500' : 'bg-amber-500'}`} 
-                          style={{ width: `${det.confidence}%` }} 
+                          className={`h-full rounded-full ${
+                            item.confidence >= 90 ? 'bg-emerald-500' :
+                            item.confidence >= 80 ? 'bg-cyan-500' :
+                            'bg-amber-500'
+                          }`}
+                          style={{ width: `${item.confidence}%` }}
                         />
                       </div>
-                      <span className="text-xs text-slate-400">{det.confidence}%</span>
+                      <span className="text-[11px] text-slate-300 font-semibold">{item.confidence}%</span>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-slate-400">{det.time}</TableCell>
-                </TableRow>
+                  </td>
+
+                  {/* Time */}
+                  <td className="px-5 py-3 text-right text-slate-400">
+                    {item.time}
+                  </td>
+
+                </tr>
               ))}
-              {filteredDetections.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                    No detections found matching your criteria.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 };
+
+export default PeopleObjects;

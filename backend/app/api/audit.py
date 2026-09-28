@@ -1,11 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import Optional
+from app.core.security import get_current_user
 from app.services.audit_service import audit_service
 
 router = APIRouter(prefix="/api/audit", tags=["audit"])
 
+@router.get("")
 @router.get("/")
-async def list_audit_logs(user: Optional[str] = None, action: Optional[str] = None, resource_type: Optional[str] = None):
+async def list_audit_logs(user: Optional[str] = None, action: Optional[str] = None, resource_type: Optional[str] = None, current_user = Depends(get_current_user)):
     return audit_service.get_logs(user, action, resource_type)
 
 @router.get("/stats")
