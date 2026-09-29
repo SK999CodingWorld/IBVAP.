@@ -148,6 +148,13 @@ export const CameraCard: React.FC<CameraCardProps> = ({
     setTimeout(() => setAlertTriggered(false), 4000);
   };
 
+  const isMjpegStream = 
+    config?.sourceType === 'webcam' || 
+    Boolean(config?.sourceUrl?.includes('/video_feed')) || 
+    Boolean(config?.sourceUrl?.includes('/stream')) || 
+    Boolean(config?.sourceUrl?.endsWith('.mjpg')) || 
+    Boolean(config?.sourceUrl?.endsWith('.mjpeg'));
+
   return (
     <div 
       className={`relative bg-[#0A0F18] border rounded-xl overflow-hidden flex flex-col group transition-all shadow-xl cursor-pointer ${getAlertRing(camera.alertLevel)}`}
@@ -182,8 +189,23 @@ export const CameraCard: React.FC<CameraCardProps> = ({
       {/* Video Display Area */}
       <div className="flex-grow bg-[#060A10] relative min-h-[190px] aspect-video flex items-center justify-center overflow-hidden">
         
-        {/* Real Video Element if custom source is set, otherwise authentic high-resolution CCTV footage */}
-        {config?.sourceUrl && camera.status !== 'offline' ? (
+        {/* Support MJPEG live streams, MP4 video elements, and CCTV feeds */}
+        {camera.status === 'offline' ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-[#070B12] text-slate-500 font-mono text-xs space-y-2 select-none">
+            <span className="w-3 h-3 rounded-full bg-red-500/50 animate-ping" />
+            <span className="text-red-400 font-bold uppercase tracking-wider">CAMERA OFFLINE</span>
+            <span className="text-[10px] text-slate-500">STANDBY RECOVERY MODE</span>
+          </div>
+        ) : config?.sourceUrl && isMjpegStream ? (
+          <img
+            src={config.sourceUrl}
+            alt={camera.name}
+            className="w-full h-full object-cover select-none"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FEED_IMAGES[camera.id] || '/feed-bop01.jpg';
+            }}
+          />
+        ) : config?.sourceUrl ? (
           <video
             ref={videoRef}
             src={config.sourceUrl}

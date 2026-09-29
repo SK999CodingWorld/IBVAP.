@@ -12,6 +12,7 @@ class CameraBase(BaseModel):
     lat: Optional[float] = None
     lon: Optional[float] = None
     rtsp_url: str
+    stream_url: Optional[str] = None
     resolution: str = "1080p"
     fps: int = 30
     camera_type: str = "PTZ"
@@ -28,14 +29,14 @@ class CameraResponse(CameraCreate):
 
 # Mock DB for cameras
 MOCK_CAMERAS = {
-    "BOP-01": {"id": "BOP-01", "name": "BOP Main Gate", "location": "Sector 4", "rtsp_url": "rtsp://...", "zone": "Red Zone", "status": "online"},
-    "BOP-02": {"id": "BOP-02", "name": "BOP Perimeter East", "location": "Sector 4", "rtsp_url": "rtsp://...", "zone": "Red Zone", "status": "online"},
-    "BOP-03": {"id": "BOP-03", "name": "BOP Perimeter West", "location": "Sector 4", "rtsp_url": "rtsp://...", "zone": "Red Zone", "status": "online"},
-    "CHECK-01": {"id": "CHECK-01", "name": "Highway Checkpoint Alpha", "location": "Highway 1", "rtsp_url": "rtsp://...", "zone": "Yellow Zone", "status": "online"},
-    "ROAD-01": {"id": "ROAD-01", "name": "Approach Road North", "location": "Sector 2", "rtsp_url": "rtsp://...", "zone": "Yellow Zone", "status": "online"},
-    "ROAD-02": {"id": "ROAD-02", "name": "Approach Road South", "location": "Sector 2", "rtsp_url": "rtsp://...", "zone": "Yellow Zone", "status": "online"},
-    "GATE-01": {"id": "GATE-01", "name": "Base Camp Entry", "location": "HQ", "rtsp_url": "rtsp://...", "zone": "Green Zone", "status": "online"},
-    "WATCH-01": {"id": "WATCH-01", "name": "Watchtower 7", "location": "Sector 5", "rtsp_url": "rtsp://...", "zone": "Red Zone", "status": "offline"}
+    "BOP-01": {"id": "BOP-01", "name": "BOP Main Gate", "location": "Sector 4", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/BOP-01/stream", "zone": "Red Zone", "status": "online"},
+    "BOP-02": {"id": "BOP-02", "name": "BOP Perimeter East", "location": "Sector 4", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/BOP-02/stream", "zone": "Red Zone", "status": "online"},
+    "BOP-03": {"id": "BOP-03", "name": "BOP Perimeter West", "location": "Sector 4", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/BOP-03/stream", "zone": "Red Zone", "status": "online"},
+    "CHECK-01": {"id": "CHECK-01", "name": "Highway Checkpoint Alpha", "location": "Highway 1", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/CHECK-01/stream", "zone": "Yellow Zone", "status": "online"},
+    "ROAD-01": {"id": "ROAD-01", "name": "Approach Road North", "location": "Sector 2", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/ROAD-01/stream", "zone": "Yellow Zone", "status": "online"},
+    "ROAD-02": {"id": "ROAD-02", "name": "Approach Road South", "location": "Sector 2", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/ROAD-02/stream", "zone": "Yellow Zone", "status": "online"},
+    "GATE-01": {"id": "GATE-01", "name": "Base Camp Entry", "location": "HQ", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/GATE-01/stream", "zone": "Green Zone", "status": "online"},
+    "WATCH-01": {"id": "WATCH-01", "name": "Watchtower 7", "location": "Sector 5", "rtsp_url": "rtsp://...", "stream_url": "/api/cameras/WATCH-01/stream", "zone": "Red Zone", "status": "offline"}
 }
 
 @router.get("")
@@ -139,3 +140,15 @@ async def camera_health(camera_id: str, current_user = Depends(get_current_user)
     if camera_id not in MOCK_CAMERAS:
         raise HTTPException(status_code=404, detail="Camera not found")
     return get_camera_health(camera_id)
+
+@router.get("/{camera_id}/stream")
+async def camera_stream(camera_id: str):
+    """Returns the live MJPEG stream for this camera"""
+    if camera_id not in MOCK_CAMERAS:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    from app.ai.realtime_stream import live_stream_processor
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(
+        live_stream_processor.generate_stream(),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )

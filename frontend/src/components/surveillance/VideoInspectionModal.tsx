@@ -138,7 +138,22 @@ export const VideoInspectionModal: React.FC = () => {
           
           {/* Left / Center: Video Stream with Overlays */}
           <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden group">
-            {config.sourceUrl ? (
+            {config.sourceUrl && (
+              config?.sourceType === 'webcam' || 
+              config?.sourceUrl?.includes('/video_feed') || 
+              config?.sourceUrl?.includes('/stream') || 
+              config?.sourceUrl?.endsWith('.mjpg') || 
+              config?.sourceUrl?.endsWith('.mjpeg')
+            ) ? (
+              <img
+                src={config.sourceUrl}
+                alt={inspectingCameraId}
+                className="w-full h-full object-contain select-none"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/command-center-feed.jpg';
+                }}
+              />
+            ) : config.sourceUrl ? (
               <video
                 ref={videoRef}
                 src={config.sourceUrl}

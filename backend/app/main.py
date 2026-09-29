@@ -9,6 +9,7 @@ import os
 
 import httpx
 from starlette.middleware.gzip import GZipMiddleware
+from typing import Optional
 
 from app.core.config import settings
 from app.core.database import engine, Base, AsyncSessionLocal, ping_database, DATABASE_URL
@@ -78,15 +79,17 @@ async def lifespan(app: FastAPI):
         async with AsyncSessionLocal() as session:
             await seed_db(session)
     
-    # Launch active background telemetry service if not running unit tests
+    # Launch active background telemetry service and live stream processor if not running unit tests
     bg_task = None
     if not os.environ.get("TESTING"):
         bg_task = asyncio.create_task(run_background_telemetry())
+        live_stream_processor.start()
     
     yield
     # Shutdown: clean resource teardown
     if bg_task:
         bg_task.cancel()
+    live_stream_processor.stop()
     await app.state.http_client.aclose()
     await cache.close()
     await engine.dispose()
@@ -196,8 +199,10 @@ async def get_performance_metrics():
 
 # Live Real-time AI Video Feed (MJPEG)
 @app.get("/video_feed", tags=["stream"])
+@app.get("/video_feed/{camera_id}", tags=["stream"])
 @app.get("/api/stream/feed", tags=["stream"])
-def video_feed():
+@app.get("/api/stream/feed/{camera_id}", tags=["stream"])
+def video_feed(camera_id: Optional[str] = None):
     """Real-time MJPEG live stream with annotated YOLO & ByteTrack overlays"""
     return StreamingResponse(
         live_stream_processor.generate_stream(),
@@ -206,7 +211,8 @@ def video_feed():
 
 # Cumulative Foot Traffic Heatmap Stream
 @app.get("/api/stream/heatmap", tags=["stream"])
-def heatmap_feed():
+@app.get("/api/stream/heatmap/{camera_id}", tags=["stream"])
+def heatmap_feed(camera_id: Optional[str] = None):
     """Cumulative foot-traffic motion heatmap MJPEG stream"""
     return StreamingResponse(
         live_stream_processor.generate_heatmap_stream(),

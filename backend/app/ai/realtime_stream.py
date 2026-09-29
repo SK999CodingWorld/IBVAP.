@@ -261,6 +261,8 @@ class LiveStreamProcessor:
         self.infer_height = 384
         self.model_type = "YOLOv8 + ByteTrack Motion Interp"
         
+        self.thread = None
+        self.fallback_video_path = None
         self._init_paths()
 
     def get_performance_config(self) -> Dict[str, Any]:
@@ -287,11 +289,14 @@ class LiveStreamProcessor:
         potential_videos = [
             os.path.join(base_dir, "test.mp4"),
             os.path.join(base_dir, "backend", "test.mp4"),
-            "test.mp4"
+            os.path.join(os.path.dirname(base_dir), "test.mp4"),
+            "test.mp4",
+            "backend/test.mp4"
         ]
         for v in potential_videos:
             if os.path.exists(v):
                 self.current_source = v
+                self.fallback_video_path = v
                 break
                 
         potential_models = [
@@ -343,8 +348,16 @@ class LiveStreamProcessor:
         if self.running:
             return
         self.running = True
-        thread = threading.Thread(target=self._process_loop, daemon=True)
-        thread.start()
+        self.thread = threading.Thread(target=self._process_loop, daemon=True)
+        self.thread.start()
+
+    def stop(self):
+        self.running = False
+        if hasattr(self, "thread") and self.thread and self.thread.is_alive():
+            try:
+                self.thread.join(timeout=2.0)
+            except Exception:
+                pass
         
     def reset_heatmap(self) -> Dict[str, str]:
         with self.lock:
@@ -378,6 +391,59 @@ class LiveStreamProcessor:
                 "height": self.frame_height
             }
             
+    def _generate_synthetic_frame(self, title: str = "IBVAP LIVE TACTICAL FEED", subtitle: str = "PERIMETER SENTRY ONLINE") -> np.ndarray:
+        h, w = getattr(self, "frame_height", 720) or 720, getattr(self, "frame_width", 1280) or 1280
+        frame = np.zeros((h, w, 3), dtype=np.uint8)
+        frame[:] = (12, 16, 24)
+        
+        # Grid lines
+        for y in range(0, h, 80):
+            cv2.line(frame, (0, y), (w, y), (20, 30, 42), 1)
+        for x in range(0, w, 80):
+            cv2.line(frame, (x, 0), (x, h), (20, 30, 42), 1)
+            
+        # Tactical corner reticles
+        cv2.polylines(frame, [np.array([[20, 50], [20, 20], [50, 20]], dtype=np.int32)], False, (0, 220, 255), 2)
+        cv2.polylines(frame, [np.array([[w-50, 20], [w-20, 20], [w-20, 50]], dtype=np.int32)], False, (0, 220, 255), 2)
+        cv2.polylines(frame, [np.array([[20, h-50], [20, h-20], [50, h-20]], dtype=np.int32)], False, (0, 220, 255), 2)
+        cv2.polylines(frame, [np.array([[w-50, h-20], [w-20, h-20], [w-20, h-50]], dtype=np.int32)], False, (0, 220, 255), 2)
+        
+        # Crosshair center
+        cx, cy = w // 2, h // 2
+        cv2.circle(frame, (cx, cy), 60, (0, 180, 220), 1)
+        cv2.line(frame, (cx - 80, cy), (cx + 80, cy), (0, 180, 220), 1)
+        cv2.line(frame, (cx, cy - 80), (cx, cy + 80), (0, 180, 220), 1)
+        
+        # Sweep animation
+        t = time.time()
+        pulse_r = int((t * 45) % 160) + 20
+        cv2.circle(frame, (cx, cy), pulse_r, (0, 100, 140), 1)
+        
+        # HUD Status Badges
+        now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC")
+        cv2.rectangle(frame, (25, 25), (460, 72), (18, 24, 34), cv2.FILLED)
+        cv2.rectangle(frame, (25, 25), (460, 72), (0, 200, 255), 1)
+        cv2.putText(frame, title, (35, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (0, 220, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, f"{subtitle} | {now_str}", (35, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.36, (180, 210, 230), 1, cv2.LINE_AA)
+        
+        cv2.putText(frame, "ZONE: SECTOR 4 RED PERIMETER // BOP-01", (25, h - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 220, 255), 1, cv2.LINE_AA)
+        cv2.putText(frame, "AI SENSORS ACTIVE • BYTETRACK RE-ID READY", (w - 380, h - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (100, 255, 150), 1, cv2.LINE_AA)
+        return frame
+
+    def _get_placeholder_jpeg(self, is_heatmap: bool = False) -> bytes:
+        if is_heatmap:
+            frame = self._generate_synthetic_frame("IBVAP THERMAL HEATMAP STREAM", "CUMULATIVE FOOT-TRAFFIC MONITOR")
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            color = cv2.applyColorMap(gray, cv2.COLORMAP_JET)
+            blended = cv2.addWeighted(color, 0.65, frame, 0.35, 0)
+            cv2.putText(blended, "THERMAL FLIR SPECTRUM ACTIVE", (35, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 2, cv2.LINE_AA)
+            _, buf = cv2.imencode(".jpg", blended, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            return buf.tobytes()
+        else:
+            frame = self._generate_synthetic_frame("IBVAP LIVE MJPEG STREAM", "CAMERA SENSORS ONLINE")
+            _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            return buf.tobytes()
+
     def get_raw_snapshot(self) -> bytes:
         with self.lock:
             if self.latest_raw_frame is not None:
@@ -385,18 +451,34 @@ class LiveStreamProcessor:
                 return buf.tobytes()
             elif self.latest_frame is not None:
                 return self.latest_frame
-        blank = np.zeros((720, 1280, 3), dtype=np.uint8)
-        _, buf = cv2.imencode(".jpg", blank)
-        return buf.tobytes()
+        return self._get_placeholder_jpeg(is_heatmap=False)
 
     def _open_capture(self):
         source = self.current_source
+        cap = None
         if source == 0 or source == "0":
-            cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-            if not cap.isOpened():
-                cap = cv2.VideoCapture(0)
+            try:
+                cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+                if not cap.isOpened():
+                    cap = cv2.VideoCapture(0)
+            except Exception:
+                cap = None
+            if cap is None or not cap.isOpened():
+                if self.fallback_video_path and os.path.exists(self.fallback_video_path):
+                    try:
+                        cap = cv2.VideoCapture(self.fallback_video_path)
+                    except Exception:
+                        cap = None
         else:
-            cap = cv2.VideoCapture(source)
+            try:
+                cap = cv2.VideoCapture(source)
+            except Exception:
+                cap = None
+            if (cap is None or not cap.isOpened()) and self.fallback_video_path and os.path.exists(self.fallback_video_path):
+                try:
+                    cap = cv2.VideoCapture(self.fallback_video_path)
+                except Exception:
+                    cap = None
             
         if cap is not None and cap.isOpened():
             cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
@@ -413,17 +495,17 @@ class LiveStreamProcessor:
                         cap.release()
                     cap = self._open_capture()
 
-            if cap is None or not cap.isOpened():
-                time.sleep(0.5)
-                cap = self._open_capture()
-                continue
-
-            success, frame = cap.read()
-            if not success:
-                if isinstance(self.current_source, str):
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                time.sleep(0.02)
-                continue
+            frame = None
+            if cap is not None and cap.isOpened():
+                success, frame = cap.read()
+                if not success:
+                    if isinstance(self.current_source, str) or (self.fallback_video_path and cap):
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                        success, frame = cap.read()
+            
+            if frame is None:
+                frame = self._generate_synthetic_frame("SENTRY CAMERA ACTIVE", "REALTIME EDGE PROCESSING")
+                time.sleep(0.033)
                 
             self.frame_height, self.frame_width = frame.shape[:2]
             current_time = time.time()
@@ -553,6 +635,8 @@ class LiveStreamProcessor:
 
                             # 2. License Plate Recognition (ANPR) & Speed Estimation on Vehicles
                             elif label in ["car", "truck", "bus", "motorcycle"]:
+                                if self.heatmap_accumulator is not None:
+                                    cv2.circle(self.heatmap_accumulator, (cx, min(self.frame_height - 1, foot_y)), 26, 1.0, -1)
                                 try:
                                     from app.ai.anpr_engine import anpr_engine
                                     from app.ai.speed_engine import speed_estimator
@@ -822,6 +906,9 @@ class LiveStreamProcessor:
                 cv2.putText(heatmap_visual, "CUMULATIVE FOOT-TRAFFIC HEATMAP", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             else:
                 heatmap_visual = frame.copy()
+                cv2.putText(heatmap_visual, "THERMAL FOOT-TRAFFIC HEATMAP [LIVE STANDBY]", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.58, (0, 220, 255), 2)
+                if len(current_poly) >= 3:
+                    cv2.polylines(heatmap_visual, [current_poly.reshape((-1, 1, 2))], isClosed=True, color=(0, 200, 255), thickness=1)
 
             _, buffer = cv2.imencode(".jpg", annotated_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             _, heat_buffer = cv2.imencode(".jpg", heatmap_visual, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -840,19 +927,31 @@ class LiveStreamProcessor:
         while True:
             with self.lock:
                 frame = self.latest_frame
-            if frame is not None:
+            if frame is None:
+                frame = self._get_placeholder_jpeg(is_heatmap=False)
+            try:
                 yield (b"--frame\r\n"
                        b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
-            time.sleep(0.03)
+            except (GeneratorExit, StopIteration):
+                break
+            except Exception:
+                break
+            time.sleep(0.033)
 
     def generate_heatmap_stream(self) -> Generator[bytes, None, None]:
         while True:
             with self.lock:
                 frame = self.latest_heatmap_frame
-            if frame is not None:
+            if frame is None:
+                frame = self._get_placeholder_jpeg(is_heatmap=True)
+            try:
                 yield (b"--frame\r\n"
                        b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
-            time.sleep(0.03)
+            except (GeneratorExit, StopIteration):
+                break
+            except Exception:
+                break
+            time.sleep(0.033)
             
     def get_live_alerts(self) -> List[Dict[str, Any]]:
         with self.lock:

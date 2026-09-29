@@ -154,6 +154,7 @@ export const SurveillanceHeatmap: React.FC = () => {
   const [activeMetric, setActiveMetric] = useState<'all' | 'human' | 'vehicle' | 'night' | 'intrusions'>('all');
   const [mapMode, setMapMode] = useState<'satellite' | 'dark' | 'terrain'>('satellite');
   const [isFlirMode, setIsFlirMode] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'snapshot' | 'mjpeg' | 'heatmap'>('snapshot');
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -685,10 +686,42 @@ export const SurveillanceHeatmap: React.FC = () => {
               </div>
             </div>
 
-            {/* Video Snapshot with HUD Overlay */}
+            {/* View Mode Selector: Snapshot vs Live MJPEG vs Heatmap Stream */}
+            <div className="flex items-center gap-1 bg-[#060A10] p-1 rounded-lg border border-[#1E293B] text-[10px]">
+              <button
+                onClick={() => setPreviewMode('snapshot')}
+                className={`flex-1 py-1 rounded font-bold transition-colors cursor-pointer ${previewMode === 'snapshot' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                Snapshot
+              </button>
+              <button
+                onClick={() => {
+                  setPreviewMode('mjpeg');
+                  showToast('Connected to Real-Time Live MJPEG Camera Feed');
+                }}
+                className={`flex-1 py-1 rounded font-bold transition-colors cursor-pointer ${previewMode === 'mjpeg' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                Live Feed
+              </button>
+              <button
+                onClick={() => {
+                  setPreviewMode('heatmap');
+                  showToast('Connected to Real-Time Motion Heatmap Stream');
+                }}
+                className={`flex-1 py-1 rounded font-bold transition-colors cursor-pointer ${previewMode === 'heatmap' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                Heatmap Stream
+              </button>
+            </div>
+
+            {/* Video Snapshot / Live Stream with HUD Overlay */}
             <div className="relative rounded-lg overflow-hidden border border-[#1E293B] aspect-video bg-black shadow-lg">
               <img 
-                src={selectedSector.cameraFeed} 
+                src={
+                  previewMode === 'mjpeg' ? '/video_feed' :
+                  previewMode === 'heatmap' ? '/api/stream/heatmap' :
+                  selectedSector.cameraFeed
+                } 
                 alt={selectedSector.name}
                 className={`w-full h-full object-cover transition-all duration-300 ${isFlirMode ? 'hue-rotate-180 invert contrast-125' : ''}`}
                 onError={(e) => {
